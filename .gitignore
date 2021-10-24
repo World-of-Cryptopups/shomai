@@ -1,0 +1,3 @@
+# ignore smart contract build files
+*.wasm
+*.abi
