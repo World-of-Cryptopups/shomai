@@ -1,0 +1,21 @@
+{
+  "main": "src/blender.cpp",
+  "contract": "blender",
+  "include": "",
+  "resource": "",
+  "cdt": "vlatest",
+  "output": "",
+  "scripts": {
+    "build": ""
+  },
+  "deploy": {
+    "target": "both",
+    "mainnet": "",
+    "kylin": "",
+    "jungle": "",
+    "local": ""
+  },
+  "test": {
+    "npmClient": ""
+  }
+}
