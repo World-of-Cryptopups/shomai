@@ -1,4 +1,4 @@
-# blender
+# shomai
 
 A blender smart contract to reduce and blend better nfts.
 

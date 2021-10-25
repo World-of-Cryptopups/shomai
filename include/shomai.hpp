@@ -8,7 +8,7 @@ using namespace eosio;
 
 #define ATOMICASSETS name("atomicassets")
 
-CONTRACT blender : public contract
+CONTRACT shomai : public contract
 {
 public:
   using contract::contract;
