@@ -1,9 +1,9 @@
-#include <shomai.hpp>
+#include <shomaiutilsx.hpp>
 
 /*
 Initialize singleton db.
 */
-ACTION shomai::init()
+ACTION shomaiutilsx::init()
 {
   require_auth(_self);
 
@@ -13,7 +13,7 @@ ACTION shomai::init()
 /*
 Create a `burner` blend.
 */
-ACTION shomai::makeblender(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients)
+ACTION shomaiutilsx::makeblender(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients)
 {
   require_auth(user);
 
@@ -51,7 +51,7 @@ ACTION shomai::makeblender(name user, name targetcol, uint64_t targettemp, vecto
 /*
   Remove a blend.
 */
-ACTION shomai::remblend(name user, uint64_t blenderid)
+ACTION shomaiutilsx::remblend(name user, uint64_t blenderid)
 {
   require_auth(user);
 
@@ -70,7 +70,7 @@ ACTION shomai::remblend(name user, uint64_t blenderid)
 /*
   Create a swap.
 */
-ACTION shomai::makeswapper(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients)
+ACTION shomaiutilsx::makeswapper(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients)
 {
   require_auth(user);
 
@@ -108,7 +108,7 @@ ACTION shomai::makeswapper(name user, name targetcol, uint64_t targettemp, vecto
 /*
 Remove a swap.
 */
-ACTION shomai::remswap(name user, uint64_t swapperid)
+ACTION shomaiutilsx::remswap(name user, uint64_t swapperid)
 {
   require_auth(user);
 
@@ -127,7 +127,7 @@ ACTION shomai::remswap(name user, uint64_t swapperid)
 /*
 Blend assets.
 */
-ACTION shomai::callblender(uint64_t blenderid, name blender, vector<uint64_t> assetids)
+ACTION shomaiutilsx::callblender(uint64_t blenderid, name blender, vector<uint64_t> assetids)
 {
   require_auth(blender);
 
@@ -181,7 +181,7 @@ ACTION shomai::callblender(uint64_t blenderid, name blender, vector<uint64_t> as
 /*
 Swap assets.
 */
-ACTION shomai::callswap(uint64_t swapperid, name blender, uint64_t assetid)
+ACTION shomaiutilsx::callswap(uint64_t swapperid, name blender, uint64_t assetid)
 {
   require_auth(blender);
 
