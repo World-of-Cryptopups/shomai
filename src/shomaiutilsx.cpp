@@ -223,5 +223,3 @@ ACTION shomaiutilsx::callswap(uint64_t swapperid, name blender, uint64_t assetid
   swappers.modify(itr, itr->user, [&](auto &row)
                   { row.uses = itr->uses + 1; });
 }
-
-EOSIO_DISPATCH(blender, (init)(makeblender)(remblend)(makeswapper)(remswap)(callblender)(callswap))
