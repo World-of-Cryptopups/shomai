@@ -26,8 +26,8 @@ public:
   /*
     Start Blend Actions
     */
-  ACTION makeblsimple(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients);
-  ACTION makeswsimple(name user, name targetcol, uint64_t targettemp, uint64_t ingredient);
+  ACTION makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients);
+  ACTION makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient);
   ACTION remblsimple(name user, uint64_t blenderid);
   ACTION remswsimple(name user, uint64_t blenderid);
   ACTION callblsimple(uint64_t blenderid, name blender, vector<uint64_t> assetids);
