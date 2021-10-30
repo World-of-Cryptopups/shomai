@@ -60,6 +60,7 @@ private:
     vector<uint64_t> ingredients; // ingredients should only be from collection
 
     uint64_t primary_key() const { return blenderid; };
+    uint64_t by_collection() const { return collection.value; };
   };
 
   /*
@@ -79,6 +80,7 @@ private:
     uint64_t target;
 
     uint64_t primary_key() const { return blenderid; };
+    uint64_t by_collection() const { return collection.value; };
   };
 
   /*
@@ -89,6 +91,8 @@ private:
     uint64_t blenderid;
 
     BlendConfig config;
+
+    uint64_t primary_key() const { return blenderid; };
   };
 
   TABLE config_s
@@ -98,8 +102,8 @@ private:
 
   typedef singleton<"config"_n, config_s> config_t;
   typedef multi_index<"config"_n, config_s> config_t_for_abi;
-  typedef multi_index<"simblender"_n, simpleblend_s> simblender_t;
-  typedef multi_index<"simswap"_n, simpleswap_s> simswap_t;
+  typedef multi_index<"simblender"_n, simpleblend_s, indexed_by<"collection"_n, const_mem_fun<simpleblend_s, uint64_t, &simpleblend_s::by_collection>>> simblender_t;
+  typedef multi_index<"simswap"_n, simpleswap_s, indexed_by<"collection"_n, const_mem_fun<simpleswap_s, uint64_t, &simpleswap_s::by_collection>>> simswap_t;
   typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
 
   /* Initialize tables */
@@ -172,5 +176,13 @@ private:
            name("burnasset"),
            make_tuple(user, asset))
         .send();
+  }
+
+  /*
+  Block the smart contract from calling own functions.
+  */
+  void blockContract(name caller)
+  {
+    check(caller != _self, "The smart contract should not call any of it's own functions!");
   }
 };
