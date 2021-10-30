@@ -37,41 +37,45 @@ ACTION shomaiblendx::makeblsimple(name author, name collection, uint64_t target,
     check(templates.find(i) != templates.end(), "Template ingredient does not exist in collection!");
   }
 
+  // get table
+  auto _simpleblends = get_simpleblends(collection);
+
   // get burner counter
   config_s current_config = config.get();
   uint64_t blenderid = current_config.blendercounter++;
   config.set(current_config, _self);
 
   // create blend info
-  simblends.emplace(author, [&](simpleblend_s &row)
-                    {
-                      row.blenderid = blenderid;
-                      row.author = author;
-                      row.collection = collection;
-                      row.target = target;
-                      row.ingredients = ingredients;
-                    });
+  _simpleblends.emplace(author, [&](simpleblend_s &row)
+                        {
+                          row.blenderid = blenderid;
+                          row.author = author;
+                          row.collection = collection;
+                          row.target = target;
+                          row.ingredients = ingredients;
+                        });
 }
 
 /**
  * Remove a Simple Blend.
  * User should be authorized by the collection blender.
 */
-ACTION shomaiblendx::remblsimple(name user, uint64_t blenderid)
+ACTION shomaiblendx::remblsimple(name user, name scope, uint64_t blenderid)
 {
   require_auth(user);
   blockContract(user);
 
-  auto itr = simblends.find(blenderid);
+  auto _simpleblends = get_simpleblends(scope);
+  auto itr = _simpleblends.find(blenderid);
 
   // check if blenderid exists
-  check(itr != simblends.end(), "Burner ID does not exist!");
+  check(itr != _simpleblends.end(), "Burner ID does not exist!");
 
   // check if user is authorized in collection
   check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
 
   // remove item
-  simblends.erase(itr);
+  _simpleblends.erase(itr);
 }
 
 /**
@@ -97,55 +101,60 @@ ACTION shomaiblendx::makeswsimple(name author, name collection, uint64_t target,
   // validate template if exists in collection
   check(templates.find(target) != templates.end(), "Template does not exist in collection!");
 
+  // get table
+  auto _simpleswaps = get_simpleswaps(collection);
+
   // get burner counter
   config_s current_config = config.get();
   uint64_t blenderid = current_config.blendercounter++;
   config.set(current_config, _self);
 
   // create blend info
-  simswaps.emplace(author, [&](simpleswap_s &row)
-                   {
-                     row.blenderid = blenderid;
-                     row.author = author;
-                     row.collection = collection;
-                     row.target = target;
-                     row.ingredient = ingredient;
-                   });
+  _simpleswaps.emplace(author, [&](simpleswap_s &row)
+                       {
+                         row.blenderid = blenderid;
+                         row.author = author;
+                         row.collection = collection;
+                         row.target = target;
+                         row.ingredient = ingredient;
+                       });
 }
 
 /**
  * Remove a simple swap.
  * User should be authorized to do this.
 */
-ACTION shomaiblendx::remswsimple(name user, uint64_t blenderid)
+ACTION shomaiblendx::remswsimple(name user, name scope, uint64_t blenderid)
 {
   require_auth(user);
   blockContract(user);
 
-  auto itr = simswaps.find(blenderid);
+  auto _simpleswaps = get_simpleswaps(scope);
+  auto itr = _simpleswaps.find(blenderid);
 
   // check if blenderid exists
-  check(itr != simswaps.end(), "Swapper ID does not exist!");
+  check(itr != _simpleswaps.end(), "Swapper ID does not exist!");
 
   // check if blenderid author/user is user
   check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
 
   // remove item
-  simswaps.erase(itr);
+  _simpleswaps.erase(itr);
 }
 
 /**
  * Call Simple Blend.
 */
-ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, vector<uint64_t> assetids)
+ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids)
 {
   require_auth(blender);
   blockContract(blender);
 
-  auto itr = simblends.find(blenderid);
+  auto _simpleblends = get_simpleblends(scope);
+  auto itr = _simpleblends.find(blenderid);
 
   // validate blenderid
-  check(itr != simblends.end(), "Burner blend does not exist!");
+  check(itr != _simpleblends.end(), "Burner blend does not exist!");
 
   // check if the smart contract is authorized in the collection
   check(isAuthorized(itr->collection, _self), "Smart Contract is not authorized for the blend's collection!");
@@ -179,15 +188,16 @@ ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, vector<uint6
 /**
  * Call Simple Swap
 */
-ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, uint64_t assetid)
+ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, name scope, uint64_t assetid)
 {
   require_auth(blender);
   blockContract(blender);
 
-  auto itr = simswaps.find(blenderid);
+  auto _simpleswaps = get_simpleswaps(scope);
+  auto itr = _simpleswaps.find(blenderid);
 
   // validate blenderid
-  check(itr != simswaps.end(), "Swapper blend does not exist!");
+  check(itr != _simpleswaps.end(), "Swapper blend does not exist!");
 
   // check if the smart contract is authorized in the collection
   check(isAuthorized(itr->collection, _self), "Smart Contract is not authorized for the blend's collection!");
@@ -212,21 +222,24 @@ ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, uint64_t ass
 /**
  * Set Blend Config of a simple blend.
 */
-ACTION shomaiblendx::setblsimconf(name author, uint64_t blenderid, BlendConfig config)
+ACTION shomaiblendx::setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config)
 {
   require_auth(author);
   blockContract(author);
 
-  auto itr = simblends.find(blenderid);
-  auto itrConfig = blendconfigs.find(blenderid);
+  auto _simpleblends = get_simpleblends(scope);
+  auto _blendconfig = get_blendconfigs(scope);
+
+  auto itr = _simpleblends.find(blenderid);
+  auto itrConfig = _blendconfig.find(blenderid);
 
   // check if user is authorized in the collection
   check(isAuthorized(itr->collection, author), "User is not authorized for this collection!");
 
-  if (itrConfig == blendconfigs.end())
+  if (itrConfig == _blendconfig.end())
   {
     // no config set yet
-    blendconfigs.emplace(author, [&](blendconfig_s &row)
+    _blendconfig.emplace(author, [&](blendconfig_s &row)
                          {
                            row.blenderid = blenderid;
 
@@ -236,7 +249,7 @@ ACTION shomaiblendx::setblsimconf(name author, uint64_t blenderid, BlendConfig c
   else
   {
     // modify the existing config
-    blendconfigs.modify(itrConfig, author, [&](blendconfig_s &row)
+    _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row)
                         { row.config = config; });
   }
 }

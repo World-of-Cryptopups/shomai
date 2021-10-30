@@ -28,12 +28,12 @@ public:
     */
   ACTION makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients);
   ACTION makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient);
-  ACTION remblsimple(name user, uint64_t blenderid);
-  ACTION remswsimple(name user, uint64_t blenderid);
-  ACTION callblsimple(uint64_t blenderid, name blender, vector<uint64_t> assetids);
-  ACTION callswsimple(uint64_t blenderid, name blender, uint64_t asset);
+  ACTION remblsimple(name user, name scope, uint64_t blenderid);
+  ACTION remswsimple(name user, name scope, uint64_t blenderid);
+  ACTION callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
+  ACTION callswsimple(uint64_t blenderid, name blender, name scope, uint64_t asset);
 
-  ACTION setblsimconf(name author, uint64_t blenderid, BlendConfig config);
+  ACTION setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config);
   /*
     End Blend Actions
     */
@@ -60,7 +60,7 @@ private:
     vector<uint64_t> ingredients; // ingredients should only be from collection
 
     uint64_t primary_key() const { return blenderid; };
-    uint64_t by_collection() const { return collection.value; };
+    // uint64_t by_collection() const { return collection.value; };
   };
 
   /*
@@ -80,7 +80,7 @@ private:
     uint64_t target;
 
     uint64_t primary_key() const { return blenderid; };
-    uint64_t by_collection() const { return collection.value; };
+    // uint64_t by_collection() const { return collection.value; };
   };
 
   /*
@@ -89,7 +89,6 @@ private:
   TABLE blendconfig_s
   {
     uint64_t blenderid;
-
     BlendConfig config;
 
     uint64_t primary_key() const { return blenderid; };
@@ -102,15 +101,31 @@ private:
 
   typedef singleton<"config"_n, config_s> config_t;
   typedef multi_index<"config"_n, config_s> config_t_for_abi;
-  typedef multi_index<"simblender"_n, simpleblend_s, indexed_by<"collection"_n, const_mem_fun<simpleblend_s, uint64_t, &simpleblend_s::by_collection>>> simblender_t;
-  typedef multi_index<"simswap"_n, simpleswap_s, indexed_by<"collection"_n, const_mem_fun<simpleswap_s, uint64_t, &simpleswap_s::by_collection>>> simswap_t;
+  typedef multi_index<"simblender"_n, simpleblend_s> simblender_t;
+  typedef multi_index<"simswap"_n, simpleswap_s> simswap_t;
   typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
+
+  //  indexed_by<"collection"_n, const_mem_fun<simpleswap_s, uint64_t, &simpleswap_s::by_collection>>
 
   /* Initialize tables */
   config_t config = config_t(_self, _self.value);
   simblender_t simblends = simblender_t(_self, _self.value);
   simswap_t simswaps = simswap_t(_self, _self.value);
   blendconfig_t blendconfigs = blendconfig_t(_self, _self.value);
+
+  /* Internal get tables by scope. */
+  simblender_t get_simpleblends(name collection)
+  {
+    return simblender_t(_self, collection.value);
+  }
+  simswap_t get_simpleswaps(name collection)
+  {
+    return simswap_t(_self, collection.value);
+  }
+  blendconfig_t get_blendconfigs(name collection)
+  {
+    return blendconfig_t(_self, collection.value);
+  }
 
   // ======== util functions
 
