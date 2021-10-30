@@ -16,6 +16,7 @@ ACTION shomaiblendx::init()
 ACTION shomaiblendx::makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients)
 {
   require_auth(author);
+  blockContract(author);
 
   // validate target collection
   auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
@@ -59,6 +60,7 @@ ACTION shomaiblendx::makeblsimple(name author, name collection, uint64_t target,
 ACTION shomaiblendx::remblsimple(name user, uint64_t blenderid)
 {
   require_auth(user);
+  blockContract(user);
 
   auto itr = simblends.find(blenderid);
 
@@ -78,6 +80,7 @@ ACTION shomaiblendx::remblsimple(name user, uint64_t blenderid)
 ACTION shomaiblendx::makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient)
 {
   require_auth(author);
+  blockContract(author);
 
   // validate target collection
   auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
@@ -117,6 +120,7 @@ ACTION shomaiblendx::makeswsimple(name author, name collection, uint64_t target,
 ACTION shomaiblendx::remswsimple(name user, uint64_t blenderid)
 {
   require_auth(user);
+  blockContract(user);
 
   auto itr = simswaps.find(blenderid);
 
@@ -136,9 +140,7 @@ ACTION shomaiblendx::remswsimple(name user, uint64_t blenderid)
 ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, vector<uint64_t> assetids)
 {
   require_auth(blender);
-
-  // do not allow the smart contract to blend for itself
-  check(blender != _self, "The smart contract itself should not be able to blend!");
+  blockContract(blender);
 
   auto itr = simblends.find(blenderid);
 
@@ -180,9 +182,7 @@ ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, vector<uint6
 ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, uint64_t assetid)
 {
   require_auth(blender);
-
-  // do not allow the smart contract to blend for itself
-  check(blender != _self, "The smart contract itself should not be able to blend!");
+  blockContract(blender);
 
   auto itr = simswaps.find(blenderid);
 
@@ -215,6 +215,7 @@ ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, uint64_t ass
 ACTION shomaiblendx::setblsimconf(name author, uint64_t blenderid, BlendConfig config)
 {
   require_auth(author);
+  blockContract(author);
 
   auto itr = simblends.find(blenderid);
   auto itrConfig = blendconfigs.find(blenderid);
