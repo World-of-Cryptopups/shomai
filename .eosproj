@@ -1,6 +1,6 @@
 {
-  "main": "src/blender.cpp",
-  "contract": "blender",
+  "main": "src/shomaiblendx.cpp",
+  "contract": "shomaiblendx",
   "include": "",
   "resource": "",
   "cdt": "vlatest",

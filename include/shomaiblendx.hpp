@@ -8,7 +8,17 @@ using namespace eosio;
 
 #define ATOMICASSETS name("atomicassets")
 
-CONTRACT shomaiutilsx : public contract
+struct BlendConfig
+{
+  int64_t maxuse = -1;     // -1 = (global use) infinite use
+  int64_t maxuseruse = -1; // -1 = (user use) infinite use
+  uint64_t uses;
+
+  int64_t startdate = -1; // -1, start as soon
+  int64_t enddate = -1;   // -1, does not end
+};
+
+CONTRACT shomaiblendx : public contract
 {
 public:
   using contract::contract;
@@ -16,12 +26,12 @@ public:
   /*
     Start Blend Actions
     */
-  ACTION makeblender(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients);
-  ACTION makeswapper(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients);
-  ACTION remblend(name user, uint64_t blenderid);
-  ACTION remswap(name user, uint64_t swapperid);
-  ACTION callblender(uint64_t blenderid, name blender, vector<uint64_t> assetids);
-  ACTION callswap(uint64_t swapperid, name blender, uint64_t assetid);
+  ACTION makeblsimple(name user, name targetcol, uint64_t targettemp, vector<uint64_t> ingredients);
+  ACTION makeswsimple(name user, name targetcol, uint64_t targettemp, uint64_t ingredient);
+  ACTION remblsimple(name user, uint64_t blenderid);
+  ACTION remswsimple(name user, uint64_t blenderid);
+  ACTION callblsimple(uint64_t blenderid, name blender, vector<uint64_t> assetids);
+  ACTION callswsimple(uint64_t blenderid, name blender, uint64_t asset);
   /*
     End Blend Actions
     */
@@ -35,49 +45,69 @@ public:
     */
 
 private:
-  TABLE blender_s
+  /*
+  Simple Blend (only from one collection)
+*/
+  TABLE simpleblend_s
   {
     uint64_t blenderid;
-    name user;
-    name targetcol;
-    uint64_t targettemp;
-    vector<uint64_t> ingredients;
-    int64_t maxuse = -1; // -1 = infinite use
-    uint64_t uses;
+    name author; // author
+
+    name collection;
+    uint64_t target;
+    vector<uint64_t> ingredients; // ingredients should only be from collection
 
     uint64_t primary_key() const { return blenderid; };
-    uint64_t by_user() const { return user.value; };
   };
 
-  TABLE swapper_s
-  {
-    uint64_t swapperid;
-    name user;
-    name targetcol;
-    uint64_t targettemp;
-    vector<uint64_t> ingredients; // could be any of, this has different usecase from blender
-    int64_t maxuse = -1;          // -1 = infinite use
-    uint64_t uses;
+  /*
+  Multi Blend (cross-collection, )
+  */
 
-    uint64_t primary_key() const { return swapperid; };
-    uint64_t by_user() const { return user.value; };
+  /*
+  Simple Swap (swap assets, single collection)
+*/
+  TABLE simpleswap_s
+  {
+    uint64_t blenderid;
+    name author;
+
+    name collection; // fromtemp and totemp can only be from similar collection
+    uint64_t ingredient;
+    uint64_t target;
+
+    uint64_t primary_key() const { return blenderid; };
+  };
+
+  /*
+    BlendConfigs
+  */
+  TABLE blendconfig_s
+  {
+    uint64_t blenderid;
+
+    int64_t maxuse = -1;     // -1 = (global use) infinite use
+    int64_t maxuseruse = -1; // -1 = (user use) infinite use
+    uint64_t uses = 0;
+
+    int64_t startdate = -1; // -1, start as soon
+    int64_t enddate = -1;   // -1, does not end
   };
 
   TABLE config_s
   {
-    uint64_t burnercounter = 100000;
-    uint64_t swappercounter = 100000;
+    uint64_t blendercounter = 100000;
   };
 
   typedef singleton<"config"_n, config_s> config_t;
   typedef multi_index<"config"_n, config_s> config_t_for_abi;
-  typedef multi_index<"blenders"_n, blender_s, indexed_by<"user"_n, const_mem_fun<blender_s, uint64_t, &blender_s::by_user>>> blender_t;
-  typedef multi_index<"swappers"_n, swapper_s, indexed_by<"user"_n, const_mem_fun<swapper_s, uint64_t, &swapper_s::by_user>>> swapper_t;
+  typedef multi_index<"simblender"_n, simpleblend_s> simblender_t;
+  typedef multi_index<"simswap"_n, simpleswap_s> simswap_t;
 
   /* Initialize tables */
   config_t config = config_t(_self, _self.value);
-  blender_t blenders = blender_t(_self, _self.value);
-  swapper_t swappers = swapper_t(_self, _self.value);
+  simblender_t simblends = simblender_t(_self, _self.value);
+  simswap_t simswaps = simswap_t(_self, _self.value);
 
   // ======== util functions
 
