@@ -208,3 +208,34 @@ ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, uint64_t ass
   mintasset(itr->collection, itrTemplate->schema_name, itr->target, blender);
   burnassets(blender, assetid);
 }
+
+/**
+ * Set Blend Config of a simple blend.
+*/
+ACTION shomaiblendx::setblsimconf(name author, uint64_t blenderid, BlendConfig config)
+{
+  require_auth(author);
+
+  auto itr = simblends.find(blenderid);
+  auto itrConfig = blendconfigs.find(blenderid);
+
+  // check if user is authorized in the collection
+  check(isAuthorized(itr->collection, author), "User is not authorized for this collection!");
+
+  if (itrConfig == blendconfigs.end())
+  {
+    // no config set yet
+    blendconfigs.emplace(author, [&](blendconfig_s &row)
+                         {
+                           row.blenderid = blenderid;
+
+                           row.config = config;
+                         });
+  }
+  else
+  {
+    // modify the existing config
+    blendconfigs.modify(itrConfig, author, [&](blendconfig_s &row)
+                        { row.config = config; });
+  }
+}

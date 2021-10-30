@@ -32,6 +32,8 @@ public:
   ACTION remswsimple(name user, uint64_t blenderid);
   ACTION callblsimple(uint64_t blenderid, name blender, vector<uint64_t> assetids);
   ACTION callswsimple(uint64_t blenderid, name blender, uint64_t asset);
+
+  ACTION setblsimconf(name author, uint64_t blenderid, BlendConfig config);
   /*
     End Blend Actions
     */
@@ -86,12 +88,7 @@ private:
   {
     uint64_t blenderid;
 
-    int64_t maxuse = -1;     // -1 = (global use) infinite use
-    int64_t maxuseruse = -1; // -1 = (user use) infinite use
-    uint64_t uses = 0;
-
-    int64_t startdate = -1; // -1, start as soon
-    int64_t enddate = -1;   // -1, does not end
+    BlendConfig config;
   };
 
   TABLE config_s
@@ -103,11 +100,13 @@ private:
   typedef multi_index<"config"_n, config_s> config_t_for_abi;
   typedef multi_index<"simblender"_n, simpleblend_s> simblender_t;
   typedef multi_index<"simswap"_n, simpleswap_s> simswap_t;
+  typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
 
   /* Initialize tables */
   config_t config = config_t(_self, _self.value);
   simblender_t simblends = simblender_t(_self, _self.value);
   simswap_t simswaps = simswap_t(_self, _self.value);
+  blendconfig_t blendconfigs = blendconfig_t(_self, _self.value);
 
   // ======== util functions
 
