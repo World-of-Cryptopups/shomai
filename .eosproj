@@ -1,6 +1,6 @@
 {
-  "main": "src/shomaiblendx.cpp",
-  "contract": "shomaiblendx",
+  "main": "src/shomaiiblend.cpp",
+  "contract": "shomaiiblend",
   "include": "",
   "resource": "",
   "cdt": "vlatest",

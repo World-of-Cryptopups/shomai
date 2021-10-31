@@ -1,11 +1,11 @@
-#include <shomaiblendx.hpp>
+#include <shomaiiblend.hpp>
 
 /*
 Initialize singleton db.
 */
-ACTION shomaiblendx::init()
+ACTION shomaiiblend::init()
 {
-  require_auth(_self);
+  require_auth(get_self());
 
   config.get_or_create(_self, config_s{});
 }
@@ -13,7 +13,7 @@ ACTION shomaiblendx::init()
 /**
  * Create a Simple Blend (same collection only)
 */
-ACTION shomaiblendx::makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients)
+ACTION shomaiiblend::makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients)
 {
   require_auth(author);
   blockContract(author);
@@ -25,7 +25,7 @@ ACTION shomaiblendx::makeblsimple(name author, name collection, uint64_t target,
   check(isAuthorized(collection, author), "You are not authorized in this collection!");
 
   // validate contract if authorized by collection
-  check(isAuthorized(collection, _self), "Contract is not authorized in the collection!");
+  check(isAuthorized(collection, get_self()), "Contract is not authorized in the collection!");
 
   // get target collection
   atomicassets::templates_t templates = atomicassets::templates_t(ATOMICASSETS, collection.value);
@@ -43,7 +43,7 @@ ACTION shomaiblendx::makeblsimple(name author, name collection, uint64_t target,
   // get burner counter
   config_s current_config = config.get();
   uint64_t blenderid = current_config.blendercounter++;
-  config.set(current_config, _self);
+  config.set(current_config, get_self());
 
   // create blend info
   _simpleblends.emplace(author, [&](simpleblend_s &row)
@@ -60,7 +60,7 @@ ACTION shomaiblendx::makeblsimple(name author, name collection, uint64_t target,
  * Remove a Simple Blend.
  * User should be authorized by the collection blender.
 */
-ACTION shomaiblendx::remblsimple(name user, name scope, uint64_t blenderid)
+ACTION shomaiiblend::remblsimple(name user, name scope, uint64_t blenderid)
 {
   require_auth(user);
   blockContract(user);
@@ -81,7 +81,7 @@ ACTION shomaiblendx::remblsimple(name user, name scope, uint64_t blenderid)
 /**
  * Create a Simple Swap. (same collection only)
 */
-ACTION shomaiblendx::makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient)
+ACTION shomaiiblend::makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient)
 {
   require_auth(author);
   blockContract(author);
@@ -93,7 +93,7 @@ ACTION shomaiblendx::makeswsimple(name author, name collection, uint64_t target,
   check(isAuthorized(collection, author), "You are not authorized in this collection!");
 
   // validate contract if authorized by collection
-  check(isAuthorized(collection, _self), "Contract is not authorized in the collection!");
+  check(isAuthorized(collection, get_self()), "Contract is not authorized in the collection!");
 
   // get target collection
   atomicassets::templates_t templates = atomicassets::templates_t(name("atomicassets"), collection.value);
@@ -107,7 +107,7 @@ ACTION shomaiblendx::makeswsimple(name author, name collection, uint64_t target,
   // get burner counter
   config_s current_config = config.get();
   uint64_t blenderid = current_config.blendercounter++;
-  config.set(current_config, _self);
+  config.set(current_config, get_self());
 
   // create blend info
   _simpleswaps.emplace(author, [&](simpleswap_s &row)
@@ -124,7 +124,7 @@ ACTION shomaiblendx::makeswsimple(name author, name collection, uint64_t target,
  * Remove a simple swap.
  * User should be authorized to do this.
 */
-ACTION shomaiblendx::remswsimple(name user, name scope, uint64_t blenderid)
+ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid)
 {
   require_auth(user);
   blockContract(user);
@@ -145,7 +145,7 @@ ACTION shomaiblendx::remswsimple(name user, name scope, uint64_t blenderid)
 /**
  * Call Simple Blend.
 */
-ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids)
+ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids)
 {
   require_auth(blender);
   blockContract(blender);
@@ -156,18 +156,21 @@ ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, name scope, 
   // validate blenderid
   check(itr != _simpleblends.end(), "Burner blend does not exist!");
 
+  // validate scope
+  check(itr->collection == scope, "Scope does not own blender!");
+
   // check if the smart contract is authorized in the collection
-  check(isAuthorized(itr->collection, _self), "Smart Contract is not authorized for the blend's collection!");
+  check(isAuthorized(itr->collection, get_self()), "Smart Contract is not authorized for the blend's collection!");
 
   // check collection mint limit and supply
-  atomicassets::templates_t templates = atomicassets::templates_t(ATOMICASSETS, itr->collection.value);
+  auto templates = atomicassets::get_templates(scope);
   auto itrTemplate = templates.require_find(itr->target, "Target template not found from collection!");
   check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
 
   // get id templates of assets
   vector<uint64_t> ingredients = itr->ingredients;
   vector<uint64_t> blendTemplates = {};
-  atomicassets::assets_t assets = atomicassets::assets_t(ATOMICASSETS, get_self().value);
+  auto assets = atomicassets::get_assets(get_self());
   auto itrAsset = assets.begin();
   for (size_t i = 0; i < assetids.size(); i++)
   {
@@ -178,17 +181,18 @@ ACTION shomaiblendx::callblsimple(uint64_t blenderid, name blender, name scope, 
   // verify if assets match with the ingredients
   sort(blendTemplates.begin(), blendTemplates.end());
   sort(ingredients.begin(), ingredients.end());
-  check(blendTemplates == ingredients, "Invalid asset ingradients!");
+
+  check(blendTemplates == ingredients, "Invalid ingredients!");
 
   // time to blend and burn
   mintasset(itr->collection, itrTemplate->schema_name, itr->target, blender);
-  burnassets(blender, assetids);
+  burnassets(assetids);
 }
 
 /**
  * Call Simple Swap
 */
-ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, name scope, uint64_t assetid)
+ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, uint64_t assetid)
 {
   require_auth(blender);
   blockContract(blender);
@@ -199,30 +203,36 @@ ACTION shomaiblendx::callswsimple(uint64_t blenderid, name blender, name scope, 
   // validate blenderid
   check(itr != _simpleswaps.end(), "Swapper blend does not exist!");
 
+  // validate scope
+  check(itr->collection == scope, "Scope does not own blender!");
+
   // check if the smart contract is authorized in the collection
-  check(isAuthorized(itr->collection, _self), "Smart Contract is not authorized for the blend's collection!");
+  check(isAuthorized(itr->collection, get_self()), "Smart Contract is not authorized for the blend's collection!");
 
   // check collection mint limit and supply
-  atomicassets::templates_t templates = atomicassets::templates_t(ATOMICASSETS, itr->collection.value);
+  auto templates = atomicassets::get_templates(scope);
   auto itrTemplate = templates.require_find(itr->target, "Target template not found from collection!");
   check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
 
   // get id template of asset
-  atomicassets::assets_t assets = atomicassets::assets_t(ATOMICASSETS, _self.value);
-  uint64_t swapTemplate = assets.find(assetid)->template_id;
+  auto assets = atomicassets::get_assets(get_self());
+  auto itrSwap = assets.find(assetid);
+
+  check(itrSwap != assets.end(), "Cannot find template ingredient of asset!.");
 
   // verify if ingredients include the swap template
-  check(itr->ingredient == swapTemplate, "Invalid ingredient for swap!");
+  check(itr->ingredient == uint64_t(itrSwap->template_id), "Invalid ingredient for swap!");
 
   // time to swap and burn
   mintasset(itr->collection, itrTemplate->schema_name, itr->target, blender);
-  burnassets(blender, assetid);
+  vector<uint64_t> assetids = {assetid};
+  burnassets(assetids);
 }
 
 /**
  * Set Blend Config of a simple blend.
 */
-ACTION shomaiblendx::setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config)
+ACTION shomaiiblend::setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config)
 {
   require_auth(author);
   blockContract(author);
@@ -242,7 +252,6 @@ ACTION shomaiblendx::setblsimconf(name author, uint64_t blenderid, name scope, B
     _blendconfig.emplace(author, [&](blendconfig_s &row)
                          {
                            row.blenderid = blenderid;
-
                            row.config = config;
                          });
   }

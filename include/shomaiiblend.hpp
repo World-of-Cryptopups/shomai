@@ -18,7 +18,13 @@ struct BlendConfig
   int64_t enddate = -1;   // -1, does not end
 };
 
-CONTRACT shomaiblendx : public contract
+struct AssetBlend
+{
+  uint64_t assetid;
+  uint64_t templateid;
+};
+
+CONTRACT shomaiiblend : public contract
 {
 public:
   using contract::contract;
@@ -152,15 +158,17 @@ private:
    */
   void mintasset(name collection, name schema, uint64_t templateid, name to)
   {
-    vector<uint64_t> back_tokens;
+    vector<asset> back_tokens;
     atomicassets::ATTRIBUTE_MAP nodata = {};
+
+    int32_t _template = int32_t(templateid);
 
     // call contract
     action(
-        permission_level{_self, name("active")},
+        permission_level{get_self(), name("active")},
         ATOMICASSETS,
         name("mintasset"),
-        make_tuple(_self, collection, schema, templateid, to, nodata, nodata, back_tokens))
+        make_tuple(get_self(), collection, schema, _template, to, nodata, nodata, back_tokens))
         .send();
   }
 
@@ -168,29 +176,16 @@ private:
       Call AtomicAssets contract to burn NFTs
       (multiple assets)
    */
-  void burnassets(name user, vector<uint64_t> assets)
+  void burnassets(vector<uint64_t> assets)
   {
-    for (auto it = assets.begin(); it != assets.end(); it++)
+    for (auto it : assets)
     {
-      action(permission_level{user, name("active")},
+      action(permission_level{get_self(), name("active")},
              ATOMICASSETS,
              name("burnasset"),
-             make_tuple(user, *it))
+             make_tuple(get_self(), it))
           .send();
     }
-  }
-
-  /*
-      Call AtomicAssets contract to burn NFTs
-      (single asset)
-   */
-  void burnassets(name user, uint64_t asset)
-  {
-    action(permission_level{user, name("active")},
-           ATOMICASSETS,
-           name("burnasset"),
-           make_tuple(user, asset))
-        .send();
   }
 
   /*

@@ -1,1 +1,1 @@
-docker run --rm --name waxcdtbuild --volume "$PWD:/project" -w /project waxteam/cdt /bin/bash -c "eosio-cpp -abigen -I include -R resource -contract shomaiutilsx -o shomaiutilsx.wasm src/shomaiutilsx.cpp"
+docker run --rm --name waxcdtbuild --volume "$PWD:/project" -w /project waxteam/cdt /bin/bash -c "eosio-cpp -abigen -I include -R resource -contract shomaiiblend -o shomaiiblend.wasm src/shomaiiblend.cpp"
