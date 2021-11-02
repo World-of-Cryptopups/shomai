@@ -1,264 +1,94 @@
 #include <shomaiiblend.hpp>
 
-/*
-Initialize singleton db.
+#include "make_blend.cpp"
+#include "remove_blend.cpp"
+#include "call_blend.cpp"
+#include "configs.cpp"
+
+/**
+ * Initialize singleton db.
 */
 ACTION shomaiiblend::init()
 {
-  require_auth(get_self());
+    require_auth(get_self());
 
-  config.get_or_create(_self, config_s{});
+    config.get_or_create(_self, config_s{});
 }
 
 /**
- * Create a Simple Blend (same collection only)
+ * Remove NFTs from refunds. (for emergency / needed purposes)
 */
-ACTION shomaiiblend::makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients)
+ACTION shomaiiblend::clearrefunds(name scope)
 {
-  require_auth(author);
-  blockContract(author);
+    require_auth(get_self());
 
-  // validate target collection
-  auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
+    // remove all recorsd
+    auto reftable = get_nftrefunds(scope);
+    auto itr = reftable.begin();
 
-  // validate author if authorized in collection
-  check(isAuthorized(collection, author), "You are not authorized in this collection!");
-
-  // validate contract if authorized by collection
-  check(isAuthorized(collection, get_self()), "Contract is not authorized in the collection!");
-
-  // get target collection
-  atomicassets::templates_t templates = atomicassets::templates_t(ATOMICASSETS, collection.value);
-
-  // validate template if exists in collection
-  check(templates.find(target) != templates.end(), "Template does not exist in collection!");
-  for (uint64_t i : ingredients)
-  {
-    check(templates.find(i) != templates.end(), "Template ingredient does not exist in collection!");
-  }
-
-  // get table
-  auto _simpleblends = get_simpleblends(collection);
-
-  // get burner counter
-  config_s current_config = config.get();
-  uint64_t blenderid = current_config.blendercounter++;
-  config.set(current_config, get_self());
-
-  // create blend info
-  _simpleblends.emplace(author, [&](simpleblend_s &row)
-                        {
-                          row.blenderid = blenderid;
-                          row.author = author;
-                          row.collection = collection;
-                          row.target = target;
-                          row.ingredients = ingredients;
-                        });
+    while (itr != reftable.end())
+    {
+        reftable.erase(itr);
+    }
 }
 
 /**
- * Remove a Simple Blend.
- * User should be authorized by the collection blender.
+ * Log NFT transfers for refund.
 */
-ACTION shomaiiblend::remblsimple(name user, name scope, uint64_t blenderid)
+[[eosio::on_notify("atomicassets::transfer")]] void shomaiiblend::savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo)
 {
-  require_auth(user);
-  blockContract(user);
+    // ignore sent nfts by this contract
+    if (from == get_self())
+    {
+        return;
+    }
 
-  auto _simpleblends = get_simpleblends(scope);
-  auto itr = _simpleblends.find(blenderid);
+    // check collection name
+    check(memo.size() == 12, "Collection name in memo is too long!");
 
-  // check if blenderid exists
-  check(itr != _simpleblends.end(), "Burner ID does not exist!");
+    name col = name(memo);
+    nftrefund_t refundtable = get_nftrefunds(col);
 
-  // check if user is authorized in collection
-  check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
-
-  // remove item
-  _simpleblends.erase(itr);
+    // save all nfts
+    for (auto i : asset_ids)
+    {
+        refundtable.emplace(get_self(), [&](nftrefund_s &row)
+                            {
+                                row.assetid = i;
+                                row.collection = col;
+                                row.from = from;
+                            });
+    }
 }
 
 /**
- * Create a Simple Swap. (same collection only)
+ * Refund action for NFTs transferred but were not processed in blends.
+ * 
 */
-ACTION shomaiiblend::makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient)
+ACTION shomaiiblend::refundnfts(name user, name scope, vector<uint64_t> assetids)
 {
-  require_auth(author);
-  blockContract(author);
+    require_auth(user);
+    blockContract(user);
 
-  // validate target collection
-  auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
+    auto refundtable = get_nftrefunds(scope);
 
-  // validate author if authorized in collection
-  check(isAuthorized(collection, author), "You are not authorized in this collection!");
+    // check all assets and confirm
+    for (auto i : assetids)
+    {
+        auto itr = refundtable.require_find(i, "Asset does not exist in collection for refund!");
 
-  // validate contract if authorized by collection
-  check(isAuthorized(collection, get_self()), "Contract is not authorized in the collection!");
+        check(itr->collection == scope, "Asset's collection is not similar to scope!"); // useless check
+        check(itr->from == user, "Asset is not from user!");
+    }
 
-  // get target collection
-  atomicassets::templates_t templates = atomicassets::templates_t(name("atomicassets"), collection.value);
+    // transfer NFTs
+    action(
+        permission_level{get_self(), name("active")},
+        ATOMICASSETS,
+        name("transfer"),
+        make_tuple(get_self(), user, assetids, string("nft refund from shomai blends")))
+        .send();
 
-  // validate template if exists in collection
-  check(templates.find(target) != templates.end(), "Template does not exist in collection!");
-
-  // get table
-  auto _simpleswaps = get_simpleswaps(collection);
-
-  // get burner counter
-  config_s current_config = config.get();
-  uint64_t blenderid = current_config.blendercounter++;
-  config.set(current_config, get_self());
-
-  // create blend info
-  _simpleswaps.emplace(author, [&](simpleswap_s &row)
-                       {
-                         row.blenderid = blenderid;
-                         row.author = author;
-                         row.collection = collection;
-                         row.target = target;
-                         row.ingredient = ingredient;
-                       });
-}
-
-/**
- * Remove a simple swap.
- * User should be authorized to do this.
-*/
-ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid)
-{
-  require_auth(user);
-  blockContract(user);
-
-  auto _simpleswaps = get_simpleswaps(scope);
-  auto itr = _simpleswaps.find(blenderid);
-
-  // check if blenderid exists
-  check(itr != _simpleswaps.end(), "Swapper ID does not exist!");
-
-  // check if blenderid author/user is user
-  check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
-
-  // remove item
-  _simpleswaps.erase(itr);
-}
-
-/**
- * Call Simple Blend.
-*/
-ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids)
-{
-  require_auth(blender);
-  blockContract(blender);
-
-  auto _simpleblends = get_simpleblends(scope);
-  auto itr = _simpleblends.find(blenderid);
-
-  // validate blenderid
-  check(itr != _simpleblends.end(), "Burner blend does not exist!");
-
-  // validate scope
-  check(itr->collection == scope, "Scope does not own blender!");
-
-  // check if the smart contract is authorized in the collection
-  check(isAuthorized(itr->collection, get_self()), "Smart Contract is not authorized for the blend's collection!");
-
-  // check collection mint limit and supply
-  auto templates = atomicassets::get_templates(scope);
-  auto itrTemplate = templates.require_find(itr->target, "Target template not found from collection!");
-  check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
-
-  // get id templates of assets
-  vector<uint64_t> ingredients = itr->ingredients;
-  vector<uint64_t> blendTemplates = {};
-  auto assets = atomicassets::get_assets(get_self());
-  auto itrAsset = assets.begin();
-  for (size_t i = 0; i < assetids.size(); i++)
-  {
-    itrAsset = assets.find(assetids[i]);
-    blendTemplates.push_back(itrAsset->template_id);
-  }
-
-  // verify if assets match with the ingredients
-  sort(blendTemplates.begin(), blendTemplates.end());
-  sort(ingredients.begin(), ingredients.end());
-
-  check(blendTemplates == ingredients, "Invalid ingredients!");
-
-  // time to blend and burn
-  mintasset(itr->collection, itrTemplate->schema_name, itr->target, blender);
-  burnassets(assetids);
-}
-
-/**
- * Call Simple Swap
-*/
-ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, uint64_t assetid)
-{
-  require_auth(blender);
-  blockContract(blender);
-
-  auto _simpleswaps = get_simpleswaps(scope);
-  auto itr = _simpleswaps.find(blenderid);
-
-  // validate blenderid
-  check(itr != _simpleswaps.end(), "Swapper blend does not exist!");
-
-  // validate scope
-  check(itr->collection == scope, "Scope does not own blender!");
-
-  // check if the smart contract is authorized in the collection
-  check(isAuthorized(itr->collection, get_self()), "Smart Contract is not authorized for the blend's collection!");
-
-  // check collection mint limit and supply
-  auto templates = atomicassets::get_templates(scope);
-  auto itrTemplate = templates.require_find(itr->target, "Target template not found from collection!");
-  check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
-
-  // get id template of asset
-  auto assets = atomicassets::get_assets(get_self());
-  auto itrSwap = assets.find(assetid);
-
-  check(itrSwap != assets.end(), "Cannot find template ingredient of asset!.");
-
-  // verify if ingredients include the swap template
-  check(itr->ingredient == uint64_t(itrSwap->template_id), "Invalid ingredient for swap!");
-
-  // time to swap and burn
-  mintasset(itr->collection, itrTemplate->schema_name, itr->target, blender);
-  vector<uint64_t> assetids = {assetid};
-  burnassets(assetids);
-}
-
-/**
- * Set Blend Config of a simple blend.
-*/
-ACTION shomaiiblend::setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config)
-{
-  require_auth(author);
-  blockContract(author);
-
-  auto _simpleblends = get_simpleblends(scope);
-  auto _blendconfig = get_blendconfigs(scope);
-
-  auto itr = _simpleblends.find(blenderid);
-  auto itrConfig = _blendconfig.find(blenderid);
-
-  // check if user is authorized in the collection
-  check(isAuthorized(itr->collection, author), "User is not authorized for this collection!");
-
-  if (itrConfig == _blendconfig.end())
-  {
-    // no config set yet
-    _blendconfig.emplace(author, [&](blendconfig_s &row)
-                         {
-                           row.blenderid = blenderid;
-                           row.config = config;
-                         });
-  }
-  else
-  {
-    // modify the existing config
-    _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row)
-                        { row.config = config; });
-  }
+    // remove from refunds
+    removeRefundNFTs(user, scope, assetids);
 }
