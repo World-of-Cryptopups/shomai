@@ -18,13 +18,15 @@ ACTION shomaiiblend::makeblsimple(name author, name collection, uint64_t target,
     check(isAuthorized(collection, get_self()), "Contract is not authorized in the collection!");
 
     // get target collection
-    atomicassets::templates_t templates = atomicassets::templates_t(ATOMICASSETS, collection.value);
+    auto templates = atomicassets::get_templates(collection);
 
     // validate template if exists in collection
     check(templates.find(target) != templates.end(), "Template does not exist in collection!");
+
+    // validate ingredient templates
     for (uint64_t i : ingredients)
     {
-        check(templates.find(i) != templates.end(), "Template ingredient does not exist in collection!");
+        validate_template_ingredient(templates, i);
     }
 
     // get table
@@ -64,10 +66,13 @@ ACTION shomaiiblend::makeswsimple(name author, name collection, uint64_t target,
     check(isAuthorized(collection, get_self()), "Contract is not authorized in the collection!");
 
     // get target collection
-    atomicassets::templates_t templates = atomicassets::templates_t(name("atomicassets"), collection.value);
+    auto templates = atomicassets::get_templates(collection);
 
     // validate template if exists in collection
     check(templates.find(target) != templates.end(), "Template does not exist in collection!");
+
+    // validate ingredient template
+    validate_template_ingredient(templates, ingredient);
 
     // get table
     auto _simpleswaps = get_simpleswaps(collection);
