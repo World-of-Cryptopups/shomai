@@ -4,6 +4,7 @@
 #include "remove_blend.cpp"
 #include "call_blend.cpp"
 #include "configs.cpp"
+#include "internals.cpp"
 
 /**
  * Initialize singleton db.

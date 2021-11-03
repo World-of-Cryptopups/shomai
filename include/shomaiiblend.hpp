@@ -181,7 +181,7 @@ private:
 	}
 
 	// ======== util functions
-	void validate_template_ingredient(atomicassets::templates_t _templates, uint64_t assetid);
+	void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
 
 	/*
     Remove NFTs from refund after a successfull action.
