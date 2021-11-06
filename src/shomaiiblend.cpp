@@ -49,7 +49,7 @@ ACTION shomaiiblend::clearrefunds(name scope)
     check(memo.size() == 12, "Collection name in memo is too long!");
 
     name col = name(memo);
-    nftrefund_t refundtable = get_nftrefunds(col);
+    nftrefund_t refundtable = get_nftrefunds(from);
 
     // save all nfts
     for (auto i : asset_ids)
@@ -72,7 +72,7 @@ ACTION shomaiiblend::refundnfts(name user, name scope, vector<uint64_t> assetids
     require_auth(user);
     blockContract(user);
 
-    auto refundtable = get_nftrefunds(scope);
+    auto refundtable = get_nftrefunds(user);
 
     // check all assets and confirm
     for (auto i : assetids)

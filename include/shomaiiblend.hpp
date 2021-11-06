@@ -193,7 +193,7 @@ private:
 	typedef multi_index<"simswap"_n, simpleswap_s> simswap_t;
 
 	typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
-	typedef multi_index<"refundnft"_n, nftrefund_s> nftrefund_t;
+	typedef multi_index<"nftrefunds"_n, nftrefund_s> nftrefund_t;
 
 	typedef multi_index<"mtargetpool"_n, multitarget_s> multitargetpool_t;
 	typedef multi_index<"claimassets"_n, claimassets_s> claimassets_t;
@@ -231,10 +231,10 @@ private:
 		return blendconfig_t(_self, collection.value);
 	}
 
-	// get nft refunds of collection
-	nftrefund_t get_nftrefunds(name collection)
+	// get nft refunds of collection (use user as scope)
+	nftrefund_t get_nftrefunds(name user)
 	{
-		return nftrefund_t(_self, collection.value);
+		return nftrefund_t(_self, user.value);
 	}
 
 	// get multitarget pool
