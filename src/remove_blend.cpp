@@ -43,3 +43,25 @@ ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid)
     // remove item
     _simpleswaps.erase(itr);
 }
+
+/**
+ * Remove a Slot Blend.
+ * User should be authorized by the collection blender.
+*/
+ACTION shomaiiblend::remblslot(name user, name scope, uint64_t blenderid)
+{
+    require_auth(user);
+    blockContract(user);
+
+    auto _slotblends = get_slotblends(scope);
+    auto itr = _slotblends.find(blenderid);
+
+    // check if blenderid exists
+    check(itr != _slotblends.end(), "Burner ID does not exist!");
+
+    // check if user is authorized in collection
+    check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
+
+    // remove item
+    _slotblends.erase(itr);
+}

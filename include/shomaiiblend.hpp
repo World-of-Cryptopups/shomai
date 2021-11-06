@@ -36,6 +36,7 @@ public:
 
 	ACTION remblsimple(name user, name scope, uint64_t blenderid);
 	ACTION remswsimple(name user, name scope, uint64_t blenderid);
+	ACTION remblslot(name user, name scope, uint64_t blenderid);
 
 	ACTION callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
 	ACTION callswsimple(uint64_t blenderid, name blender, name scope, uint64_t asset);
