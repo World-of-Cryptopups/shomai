@@ -92,3 +92,58 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
     // remove nfts from refund
     removeRefundNFTs(blender, scope, assetids);
 }
+
+ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids)
+{
+    require_auth(blender);
+
+    auto _slotblends = get_slotblends(scope);
+
+    auto itrBlender = _slotblends.require_find(blenderid, "Slot Blender does not exist!");
+
+    // CHECK ingredients in here
+
+    // https://github.com/pinknetworkx/atomicpacks-contract/blob/master/src/unboxing.cpp#L206
+    // Get signing value from transaction id
+    size_t size = transaction_size();
+    char buf[size];
+    int32_t read = read_transaction(buf, size);
+    check(size == read, "Signing values generation: read_transaction() has failed.");
+    checksum256 txid = sha256(buf, read);
+    uint64_t signing_value;
+    memcpy(&signing_value, txid.data(), sizeof(signing_value));
+
+    //Check if the signing_value was already used.
+    //If that is the case, increment the signing_value until a non-used value is found
+    while (orng::signvals.find(signing_value) != orng::signvals.end())
+    {
+        signing_value++;
+    }
+
+    // Get claim counter
+    config_s current_config = config.get();
+    uint64_t claim_id = current_config.claimcounter++;
+    config.set(current_config, get_self());
+
+    // save job
+    claimjobs.emplace(get_self(), [&](claimjob_s &row)
+                      {
+                          row.claim_id = claim_id;
+
+                          row.blender = blender;
+                          row.blenderid = blenderid;
+                          row.scope = scope;
+
+                          row.assets = assetids;
+                      });
+
+    action(
+        permission_level{get_self(), name("active")},
+        orng::ORNG_CONTRACT,
+        name("requestrand"),
+        make_tuple(
+            claim_id,
+            signing_value,
+            get_self()))
+        .send();
+}

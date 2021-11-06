@@ -30,8 +30,8 @@ struct MultiBlendIngredient
 
 struct SlotBlendIngredientAttributes
 {
-    string attrib;         // for templates, this is the template id
-    vector<string> values; // this is blank / empty for templates
+    string attrib;         // for templates, this should be `any from values` or `single only`
+    vector<string> values; // this is blank / if `any from values`, it can be >1 string templates otherwise should only be one
 };
 
 /**
@@ -47,16 +47,17 @@ struct SlotBlendIngredientAttributes
 */
 struct SlotBlendIngredient
 {
-    name collection; // name of collection
-    name schema;
-    string from; // templates || immutable_data
-    bool anyof;  // any from attributes?
+    name collection;  // name of collection
+    name schema;      // schema under collection
+    bool schema_only; // anything under this schema
+    int8_t from;      // templates || immutable_data (temp|data) 0 == temp  && 1 == data
+    bool anyof;       // any from attributes?
     vector<SlotBlendIngredientAttributes> attributes;
     string display_text; // text to display instead of auto-generated
 };
 
-struct MultiOddTarget
+struct MultiTarget
 {
     uint32_t odds;
-    int32_t templateid;
+    uint64_t templateid;
 };

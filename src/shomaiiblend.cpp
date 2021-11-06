@@ -5,6 +5,7 @@
 #include "call_blend.cpp"
 #include "configs.cpp"
 #include "internals.cpp"
+#include "claims.cpp"
 
 /**
  * Initialize singleton db.

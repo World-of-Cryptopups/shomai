@@ -8,57 +8,60 @@
 
 #include <eosio/eosio.hpp>
 #include <eosio/singleton.hpp>
-#include "atomicassets.hpp"
-#include "atomicdata.hpp"
-#include "custom-types.hpp"
+#include <eosio/crypto.hpp>
+#include <eosio/transaction.hpp>
+
+#include <atomicassets.hpp>
+#include <atomicdata.hpp>
+#include <custom-types.hpp>
+#include <wax-orng.hpp>
 
 using namespace std;
 using namespace eosio;
 
 #define ATOMICASSETS name("atomicassets")
 
+const uint32_t TOTALODDS = 100;
+
 CONTRACT shomaiiblend : public contract
 {
 public:
 	using contract::contract;
 
-	/*
-    Start Blend Actions
-    */
+	/* Start Blend Actions */
 	ACTION makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients);
 	ACTION makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient);
 	ACTION makeblmulti(name author);
-	ACTION makeblslot(name author, name collection);
+	ACTION makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients);
+
 	ACTION remblsimple(name user, name scope, uint64_t blenderid);
 	ACTION remswsimple(name user, name scope, uint64_t blenderid);
+
 	ACTION callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
 	ACTION callswsimple(uint64_t blenderid, name blender, name scope, uint64_t asset);
+	ACTION callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
+
+	ACTION claimblslot(uint64_t claim_id, name blender, name scope);
 
 	ACTION setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config);
-	/*
-    End Blend Actions
-    */
+	/* End Blend Actions */
 
-	/* 
-   Start System actions
-    */
+	/* Start ORNG Actions */
+	ACTION receiverand(uint64_t claim_id, checksum256 random_value);
+	/* End ORNG Actions */
+
+	/*  Start System actions */
 	ACTION init();
 	ACTION clearrefunds(name scope);
-	/* 
-   End System actions
-    */
+	/*  End System actions */
 
-	/*
-    Start Util actions
-   */
+	/* Start Util actions */
 	ACTION refundnfts(name user, name scope, vector<uint64_t> assetids);
-	/*
-    End Util actions
-   */
+	/* End Util actions */
 
-	/*Start Payable Actions*/
+	/* Start Payable Actions */
 	[[eosio::on_notify("atomicassets::transfer")]] void savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo);
-	/*End Payable Actions*/
+	/* End Payable Actions */
 
 private:
 	/*
@@ -103,7 +106,6 @@ private:
 		name author;
 
 		name collection;
-		uint64_t target;
 		vector<SlotBlendIngredient> ingredients;
 
 		uint64_t primary_key() const { return blenderid; };
@@ -126,6 +128,47 @@ private:
 	};
 
 	/*
+	Multi Target pool.
+*/
+	TABLE multitarget_s
+	{
+		uint64_t blenderid;
+
+		name collection;
+		vector<MultiTarget> targets;
+
+		uint64_t primary_key() const { return blenderid; };
+	};
+
+	/*
+	Unclaimed NFTs from blends.
+	*/
+	TABLE claimassets_s
+	{
+		uint64_t claim_id;
+
+		uint64_t blenderid;
+		name blender;
+
+		int32_t templateid;
+		vector<uint64_t> assets;
+
+		uint64_t primary_key() const { return claim_id; };
+	};
+
+	TABLE claimjob_s
+	{
+		uint64_t claim_id;
+
+		uint64_t blenderid;
+		name blender;
+		name scope;				 // collection name
+		vector<uint64_t> assets; // ingredients
+
+		uint64_t primary_key() const { return claim_id; };
+	};
+
+	/*
     BlendConfigs
   */
 	TABLE blendconfig_s
@@ -139,49 +182,76 @@ private:
 	TABLE config_s
 	{
 		uint64_t blendercounter = 100000;
+		uint64_t claimcounter = 100000;
 	};
 
-	typedef singleton<"config"_n, config_s> config_t;
-	typedef multi_index<"config"_n, config_s> config_t_for_abi;
+	typedef singleton<"configs"_n, config_s> config_t;
+	typedef multi_index<"configs"_n, config_s> config_t_for_abi;
+
 	typedef multi_index<"simblender"_n, simpleblend_s> simblender_t;
 	typedef multi_index<"slotblender"_n, slotblend_s> slotblend_t;
 	typedef multi_index<"simswap"_n, simpleswap_s> simswap_t;
+
 	typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
 	typedef multi_index<"refundnft"_n, nftrefund_s> nftrefund_t;
+
+	typedef multi_index<"mtargetpool"_n, multitarget_s> multitargetpool_t;
+	typedef multi_index<"claimassets"_n, claimassets_s> claimassets_t;
+	typedef multi_index<"claimjobs"_n, claimjob_s> claimjob_t;
 
 	//  indexed_by<"collection"_n, const_mem_fun<simpleswap_s, uint64_t, &simpleswap_s::by_collection>>
 
 	/* Initialize tables */
 	config_t config = config_t(_self, _self.value);
-	simblender_t simblends = simblender_t(_self, _self.value);
-	simswap_t simswaps = simswap_t(_self, _self.value);
-	blendconfig_t blendconfigs = blendconfig_t(_self, _self.value);
-	nftrefund_t nftrefunds = nftrefund_t(_self, _self.value);
+	claimjob_t claimjobs = claimjob_t(_self, _self.value);
 
 	/* Internal get tables by scope. */
+
 	// get simple blends of collecton
 	simblender_t get_simpleblends(name collection)
 	{
 		return simblender_t(_self, collection.value);
 	}
+
 	// get simple swaps of collection
 	simswap_t get_simpleswaps(name collection)
 	{
 		return simswap_t(_self, collection.value);
 	}
+
+	// get slot blends of collection
+	slotblend_t get_slotblends(name collection)
+	{
+		return slotblend_t(_self, collection.value);
+	}
+
 	// get blendconfigs of collection
 	blendconfig_t get_blendconfigs(name collection)
 	{
 		return blendconfig_t(_self, collection.value);
 	}
+
 	// get nft refunds of collection
 	nftrefund_t get_nftrefunds(name collection)
 	{
 		return nftrefund_t(_self, collection.value);
 	}
 
+	// get multitarget pool
+	multitargetpool_t get_blendertargets(name collection)
+	{
+		return multitargetpool_t(_self, collection.value);
+	}
+
+	// get claim assets
+	claimassets_t get_claimassets(name collection)
+	{
+		return claimassets_t(_self, collection.value);
+	}
+
 	// ======== util functions
 	void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
+	void validate_multitarget(name collection, vector<MultiTarget> targets);
 
 	/*
     Remove NFTs from refund after a successfull action.
