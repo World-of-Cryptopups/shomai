@@ -3,7 +3,7 @@
 /**
  * Create a Simple Blend (same collection only)
 */
-ACTION shomaiiblend::makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients)
+ACTION shomaiiblend::makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients)
 {
     require_auth(author);
     blockContract(author);
@@ -24,7 +24,7 @@ ACTION shomaiiblend::makeblsimple(name author, name collection, uint64_t target,
     check(templates.find(target) != templates.end(), "Template does not exist in collection!");
 
     // validate ingredient templates
-    for (uint64_t i : ingredients)
+    for (auto &i : ingredients)
     {
         validate_template_ingredient(templates, i);
     }
@@ -51,7 +51,7 @@ ACTION shomaiiblend::makeblsimple(name author, name collection, uint64_t target,
 /**
  * Create a Simple Swap. (same collection only)
 */
-ACTION shomaiiblend::makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient)
+ACTION shomaiiblend::makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient)
 {
     require_auth(author);
     blockContract(author);
@@ -98,9 +98,10 @@ ACTION shomaiiblend::makeblmulti(name author)
     require_auth(author);
 }
 
-ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients)
+ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title)
 {
     require_auth(author);
+    blockContract(author);
 
     // validate target collection
     auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
@@ -179,6 +180,8 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
 
                            row.collection = collection;
                            row.ingredients = ingredients;
+
+                           row.title = title;
                        });
 
     // store multi targets

@@ -26,8 +26,8 @@ ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, 
     check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
 
     // get id templates of assets
-    vector<uint64_t> ingredients = itr->ingredients;
-    vector<uint64_t> blendTemplates = {};
+    vector<uint32_t> ingredients = itr->ingredients;
+    vector<uint32_t> blendTemplates = {};
     auto assets = atomicassets::get_assets(get_self());
     auto itrAsset = assets.begin();
     for (size_t i = 0; i < assetids.size(); i++)
@@ -93,7 +93,7 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
     removeRefundNFTs(blender, scope, assetids);
 }
 
-ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids)
+ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids, uint64_t claim_id)
 {
     require_auth(blender);
 
@@ -120,10 +120,8 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
         signing_value++;
     }
 
-    // Get claim counter
-    config_s current_config = config.get();
-    uint64_t claim_id = current_config.claimcounter++;
-    config.set(current_config, get_self());
+    // check claim_id
+    check(claimjobs.find(claim_id) == claimjobs.end(), "Generate another unique claim id!");
 
     // save job
     claimjobs.emplace(get_self(), [&](claimjob_s &row)

@@ -2,13 +2,13 @@
 
 #include "randomness_provider.cpp"
 
-ACTION shomaiiblend::receiverand(uint64_t claim_id, checksum256 random_value)
+ACTION shomaiiblend::receiverand(uint64_t assoc_id, checksum256 random_value)
 {
     require_auth(orng::ORNG_CONTRACT);
 
     RandomnessProvider random_provider(random_value);
 
-    auto claimjob = claimjobs.find(claim_id);
+    auto claimjob = claimjobs.find(assoc_id);
 
     auto targetstable = get_blendertargets(claimjob->scope);
     auto _target = targetstable.find(claimjob->blenderid);

@@ -29,10 +29,10 @@ public:
 	using contract::contract;
 
 	/* Start Blend Actions */
-	ACTION makeblsimple(name author, name collection, uint64_t target, vector<uint64_t> ingredients);
-	ACTION makeswsimple(name author, name collection, uint64_t target, uint64_t ingredient);
+	ACTION makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients);
+	ACTION makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient);
 	ACTION makeblmulti(name author);
-	ACTION makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients);
+	ACTION makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title);
 
 	ACTION remblsimple(name user, name scope, uint64_t blenderid);
 	ACTION remswsimple(name user, name scope, uint64_t blenderid);
@@ -40,7 +40,7 @@ public:
 
 	ACTION callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
 	ACTION callswsimple(uint64_t blenderid, name blender, name scope, uint64_t asset);
-	ACTION callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
+	ACTION callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids, uint64_t claim_id);
 
 	ACTION claimblslot(uint64_t claim_id, name blender, name scope);
 
@@ -48,7 +48,7 @@ public:
 	/* End Blend Actions */
 
 	/* Start ORNG Actions */
-	ACTION receiverand(uint64_t claim_id, checksum256 random_value);
+	ACTION receiverand(uint64_t assoc_id, checksum256 random_value);
 	/* End ORNG Actions */
 
 	/*  Start System actions */
@@ -87,8 +87,8 @@ private:
 		name author; // author
 
 		name collection;
-		uint64_t target;
-		vector<uint64_t> ingredients; // ingredients should only be from collection
+		uint32_t target;
+		vector<uint32_t> ingredients; // ingredients should only be from collection
 
 		uint64_t primary_key() const { return blenderid; };
 		// uint64_t by_collection() const { return collection.value; };
@@ -109,6 +109,8 @@ private:
 		name collection;
 		vector<SlotBlendIngredient> ingredients;
 
+		string title;
+
 		uint64_t primary_key() const { return blenderid; };
 	};
 
@@ -121,8 +123,8 @@ private:
 		name author;
 
 		name collection; // fromtemp and totemp can only be from similar collection
-		uint64_t ingredient;
-		uint64_t target;
+		uint32_t ingredient;
+		uint32_t target;
 
 		uint64_t primary_key() const { return blenderid; };
 		// uint64_t by_collection() const { return collection.value; };
@@ -189,14 +191,14 @@ private:
 	typedef singleton<"configs"_n, config_s> config_t;
 	typedef multi_index<"configs"_n, config_s> config_t_for_abi;
 
-	typedef multi_index<"simblender"_n, simpleblend_s> simblender_t;
-	typedef multi_index<"slotblender"_n, slotblend_s> slotblend_t;
-	typedef multi_index<"simswap"_n, simpleswap_s> simswap_t;
+	typedef multi_index<"simblenders"_n, simpleblend_s> simblender_t;
+	typedef multi_index<"slotblenders"_n, slotblend_s> slotblend_t;
+	typedef multi_index<"simswaps"_n, simpleswap_s> simswap_t;
 
 	typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
 	typedef multi_index<"nftrefunds"_n, nftrefund_s> nftrefund_t;
 
-	typedef multi_index<"mtargetpool"_n, multitarget_s> multitargetpool_t;
+	typedef multi_index<"targetpools"_n, multitarget_s> multitargetpool_t;
 	typedef multi_index<"claimassets"_n, claimassets_s> claimassets_t;
 	typedef multi_index<"claimjobs"_n, claimjob_s> claimjob_t;
 
@@ -259,7 +261,7 @@ private:
   */
 	void removeRefundNFTs(name from, name collection, vector<uint64_t> assetids)
 	{
-		auto refundtable = get_nftrefunds(collection);
+		auto refundtable = get_nftrefunds(from);
 
 		for (auto i : assetids)
 		{

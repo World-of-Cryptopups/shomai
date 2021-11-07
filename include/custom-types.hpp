@@ -14,18 +14,18 @@ using namespace std;
 */
 struct BlendConfig
 {
-    int64_t maxuse = -1;     // -1 = (global use) infinite use
-    int64_t maxuseruse = -1; // -1 = (user use) infinite use
-    uint64_t uses;
+    int32_t maxuse = -1;     // -1 = (global use) infinite use
+    int32_t maxuseruse = -1; // -1 = (user use) infinite use
+    uint32_t uses;
 
-    int64_t startdate = -1; // -1, start as soon
-    int64_t enddate = -1;   // -1, does not end
+    int32_t startdate = -1; // -1, start as soon
+    int32_t enddate = -1;   // -1, does not end
 };
 
 struct MultiBlendIngredient
 {
     name collection;
-    uint64_t ingredient;
+    uint32_t ingredient;
 };
 
 struct SlotBlendIngredientAttributes
@@ -43,7 +43,6 @@ struct SlotBlendIngredientAttributes
  *      otherwise, the nft will require all the attributes (not applicable for templates)
  *  - attributes :: vector<> config or requirements for this slow
  *      if this is empty for templates, it will allow anything from the schema
- *  - display_text :: text to display for the blender to know what to do
 */
 struct SlotBlendIngredient
 {
@@ -53,11 +52,10 @@ struct SlotBlendIngredient
     int8_t from;      // templates || immutable_data (temp|data) 0 == temp  && 1 == data
     bool anyof;       // any from attributes?
     vector<SlotBlendIngredientAttributes> attributes;
-    string display_text; // text to display instead of auto-generated
 };
 
 struct MultiTarget
 {
     uint32_t odds;
-    uint64_t templateid;
+    uint32_t templateid;
 };

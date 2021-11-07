@@ -25,7 +25,7 @@ void shomaiiblend::validate_multitarget(name collection, vector<MultiTarget> tar
     for (MultiTarget i : targets)
     {
         // check first if target template exists or not
-        auto itrTemplate = templates.require_find(i.templateid, ("Target template does not exist in collection: " + to_string(i.templateid)).c_str());
+        auto itrTemplate = templates.require_find(uint64_t(i.templateid), ("Target template does not exist in collection: " + to_string(i.templateid)).c_str());
 
         check(i.odds > 0, "Each target outcome must have positive odds.");
         check(i.odds <= lastodd, "The target outcome must be sorted in descending order based on their odds.");
