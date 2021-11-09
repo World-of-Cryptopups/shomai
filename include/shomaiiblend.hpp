@@ -256,6 +256,30 @@ private:
 	void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
 	void validate_multitarget(name collection, vector<MultiTarget> targets);
 
+	/**
+	 * Checks if the asset is transferred to the smart contract and if it exists in the refund table.
+	 * 
+	 * Returns the asset iterator.
+	*/
+	atomicassets::assets_t::const_iterator validateasset(uint64_t asset, name owner)
+	{
+		auto itrAssets = atomicassets::get_assets(get_self());
+		auto itr = itrAssets.require_find(asset, "The asset is not transferred to the smart contract for blending!");
+
+		checkfromrefund(asset, owner);
+
+		return itr;
+	}
+
+	/**
+	 * Checks and confirms if the asset is in the nftrefunds table within the scope of the owner.
+	*/
+	void checkfromrefund(uint64_t assetid, name owner)
+	{
+		auto refunds = get_nftrefunds(owner);
+		refunds.require_find(assetid, "The asset does not exist or is not transferred by the user to the smart contract!");
+	}
+
 	/*
     Remove NFTs from refund after a successfull action.
   */

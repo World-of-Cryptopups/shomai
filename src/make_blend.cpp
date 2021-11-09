@@ -116,51 +116,65 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
     validate_multitarget(collection, targets);
 
     // validate ingredients
-    for (auto i : ingredients)
+    for (auto &i : ingredients)
     {
-        atomicassets::collections.require_find(i.collection.value, "Collection does not exist!");
-
-        auto schemas = atomicassets::get_schemas(collection);
-        auto itrSchema = schemas.require_find(i.schema.value, "Schema does not exist from this collections!");
-
-        if (!i.schema_only)
+        switch (i.index())
         {
-            check(i.from == 0 || i.from == 1, "Invalid from props in ingredient!");
+        case 0:
+        {
+            // CHECK SCHEMA SLOT
 
-            // validate templates
-            if (i.from == 0)
+            auto _schema = get<SlotBlendSchemaIngredient>(i);
+
+            auto itrSchemas = atomicassets::get_schemas(_schema.collection);
+            itrSchemas.require_find(_schema.schema.value, "Schema does not exist in this collection!");
+
+            break;
+        }
+        case 1:
+        {
+            // CHECK TEMPLATE SLOT
+
+            auto _template = get<SlotBlendTemplateIngredient>(i);
+
+            auto itrTemplates = atomicassets::get_templates(_template.collection);
+            for (auto &j : _template.templates)
             {
-                auto itrTemplates = atomicassets::get_templates(i.collection);
-
-                for (auto j : i.attributes)
-                {
-                    for (auto k : j.values)
-                    {
-                        auto t = static_cast<uint64_t>(stoul(k));
-
-                        check(itrTemplates.find(t) != itrTemplates.end(), "Template attribute not found!");
-                    }
-                }
+                itrTemplates.require_find(uint64_t(j), "Template does not exist in this collection!");
             }
 
-            // validate attribute keys
-            if (i.from == 1)
+            break;
+        }
+        case 2:
+        {
+            // CHECK ATTRIBUTE SLOT
+
+            auto _attrib = get<SlotBlendAttribIngredient>(i);
+
+            auto itrSchemas = atomicassets::get_schemas(_attrib.collection);
+            auto itr = itrSchemas.require_find(_attrib.schema.value, "Schema does not exist in this collection!");
+
+            for (auto j : _attrib.attributes)
             {
-                for (auto j : i.attributes)
+                bool keyExists;
+
+                for (auto s : itr->format)
                 {
-                    bool keyExists;
-
-                    for (auto s : itrSchema->format)
+                    if (s.name == j.key)
                     {
-                        if (s.name == j.attrib)
-                        {
-                            keyExists = true;
-                        }
+                        keyExists = true;
                     }
-
-                    check(keyExists, "Attribute key does not exist in schema!");
                 }
+
+                check(keyExists, "Attribute key does not exist in schema!");
             }
+
+            break;
+        }
+        default:
+        {
+            check(false, "Invalid ignredient type!");
+        }
         }
     }
 

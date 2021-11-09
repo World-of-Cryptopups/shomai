@@ -3,8 +3,7 @@
 /**
  * Call Simple Blend.
 */
-ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids)
-{
+ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids) {
     require_auth(blender);
     blockContract(blender);
 
@@ -30,8 +29,7 @@ ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, 
     vector<uint32_t> blendTemplates = {};
     auto assets = atomicassets::get_assets(get_self());
     auto itrAsset = assets.begin();
-    for (size_t i = 0; i < assetids.size(); i++)
-    {
+    for (size_t i = 0; i < assetids.size(); i++) {
         itrAsset = assets.find(assetids[i]);
         blendTemplates.push_back(itrAsset->template_id);
     }
@@ -53,8 +51,7 @@ ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, 
 /**
  * Call Simple Swap
 */
-ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, uint64_t assetid)
-{
+ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, uint64_t assetid) {
     require_auth(blender);
     blockContract(blender);
 
@@ -93,15 +90,114 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
     removeRefundNFTs(blender, scope, assetids);
 }
 
-ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids, uint64_t claim_id)
-{
+/**
+ * Call slot blend.
+*/
+ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids, uint64_t claim_id) {
     require_auth(blender);
+
+    // check claim_id very first
+    check(claimjobs.find(claim_id) == claimjobs.end(), "Generate another unique claim id!");
 
     auto _slotblends = get_slotblends(scope);
 
     auto itrBlender = _slotblends.require_find(blenderid, "Slot Blender does not exist!");
 
+    int lastIndex = 0;
+
     // CHECK ingredients in here
+    for (auto &i : itrBlender->ingredients) {
+        switch (i.index()) {
+            case 0: {
+                // check if they have the required schemas
+
+                auto k = get<SlotBlendSchemaIngredient>(i);
+
+                for (int i = 0; i < k.amount; i++) {
+                    auto asset = assetids[lastIndex];
+                    auto itr = validateasset(asset, blender);
+                    check(itr->schema_name == k.schema, "The asset ingredient is not from the required slot schema!");
+
+                    lastIndex++;
+                }
+
+                break;
+            }
+            case 1: {
+                auto k = get<SlotBlendTemplateIngredient>(i);
+
+                for (int i = 0; i < k.amount; i++) {
+                    auto asset = assetids[lastIndex];
+                    auto itr = validateasset(asset, blender);
+
+                    bool ok = false;
+
+                    for (const auto &x : k.templates) {
+                        if (itr->template_id == x) {
+                            ok = true;
+
+                            // stop loop once true
+                            break;
+                        }
+                    }
+
+                    check(ok, "The asset ingredient does not meet the required templates for blending!");
+
+                    lastIndex++;
+                }
+
+                break;
+            }
+            case 2: {
+                auto k = get<SlotBlendAttribIngredient>(i);
+
+                auto itrSchemas = atomicassets::get_schemas(k.collection);
+                auto itrTemplates = atomicassets::get_templates(k.collection);
+
+                auto itrSchema = itrSchemas.require_find(k.schema.value, "Schema does not exist in the ingredient's collection!");
+
+                for (int i = 0; i < k.amount; i++) {
+                    auto asset = assetids[lastIndex];
+                    auto itr = validateasset(asset, blender);
+                    auto assetTemplate = itrTemplates.find(uint64_t(itr->template_id));
+
+                    atomicassets::ATTRIBUTE_MAP temp_data = atomicdata::deserialize(assetTemplate->immutable_serialized_data, itrSchema->format);
+
+                    bool ok = false;
+
+                    for (const auto &x : k.attributes) {
+                        for (const auto &y : x.allowed_values) {
+                            auto value = get<string>(temp_data[x.key]);
+
+                            // check if attribute value includes the allowed_value
+                            if (value.find(y) != string::npos) {
+                                ok = true;
+
+                                if (!k.require_all_attribs) {
+                                    break;
+                                }
+                            } else {
+                                ok = false;
+                            }
+                        }
+
+                        if (ok && !k.require_all_attribs) {
+                            break;
+                        }
+                    }
+
+                    check(ok, "The asset ingredient does not meet the required schema attributes.");
+
+                    lastIndex++;
+                }
+
+                break;
+            }
+            default: {
+                check(false, "Invalid ingredient type!");
+            }
+        }
+    }
 
     // https://github.com/pinknetworkx/atomicpacks-contract/blob/master/src/unboxing.cpp#L206
     // Get signing value from transaction id
@@ -115,25 +211,20 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
 
     //Check if the signing_value was already used.
     //If that is the case, increment the signing_value until a non-used value is found
-    while (orng::signvals.find(signing_value) != orng::signvals.end())
-    {
+    while (orng::signvals.find(signing_value) != orng::signvals.end()) {
         signing_value++;
     }
 
-    // check claim_id
-    check(claimjobs.find(claim_id) == claimjobs.end(), "Generate another unique claim id!");
-
     // save job
-    claimjobs.emplace(get_self(), [&](claimjob_s &row)
-                      {
-                          row.claim_id = claim_id;
+    claimjobs.emplace(get_self(), [&](claimjob_s &row) {
+        row.claim_id = claim_id;
 
-                          row.blender = blender;
-                          row.blenderid = blenderid;
-                          row.scope = scope;
+        row.blender = blender;
+        row.blenderid = blenderid;
+        row.scope = scope;
 
-                          row.assets = assetids;
-                      });
+        row.assets = assetids;
+    });
 
     action(
         permission_level{get_self(), name("active")},

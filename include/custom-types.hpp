@@ -28,11 +28,39 @@ struct MultiBlendIngredient
     uint32_t ingredient;
 };
 
-struct SlotBlendIngredientAttributes
+struct SlotBlendSchemaIngredient
 {
-    string attrib;         // for templates, this should be `any from values` or `single only`
-    vector<string> values; // this is blank / if `any from values`, it can be >1 string templates otherwise should only be one
+    uint8_t type = 0;
+    name collection;
+    name schema;
+    uint32_t amount;
 };
+
+struct SlotBlendTemplateIngredient
+{
+    uint8_t type = 1;
+    name collection;
+    vector<uint32_t> templates;
+    uint32_t amount;
+};
+
+struct SlotBlendAttribValuesIngredient
+{
+    string key;
+    vector<string> allowed_values;
+};
+
+struct SlotBlendAttribIngredient
+{
+    uint8_t type = 2;
+    name collection;
+    name schema;
+    bool require_all_attribs;
+    vector<SlotBlendAttribValuesIngredient> attributes;
+    uint32_t amount;
+};
+
+typedef std::variant<SlotBlendSchemaIngredient, SlotBlendTemplateIngredient, SlotBlendAttribIngredient> SlotBlendIngredient;
 
 /**
  * Ingredient for slot blending.
@@ -44,15 +72,15 @@ struct SlotBlendIngredientAttributes
  *  - attributes :: vector<> config or requirements for this slow
  *      if this is empty for templates, it will allow anything from the schema
 */
-struct SlotBlendIngredient
-{
-    name collection;  // name of collection
-    name schema;      // schema under collection
-    bool schema_only; // anything under this schema
-    int8_t from;      // templates || immutable_data (temp|data) 0 == temp  && 1 == data
-    bool anyof;       // any from attributes?
-    vector<SlotBlendIngredientAttributes> attributes;
-};
+// struct SlotBlendIngredient
+// {
+//     name collection;  // name of collection
+//     name schema;      // schema under collection
+//     bool schema_only; // anything under this schema
+//     int8_t from;      // templates || immutable_data (temp|data) 0 == temp  && 1 == data
+//     bool anyof;       // any from attributes?
+//     vector<SlotBlendIngredientAttributes> attributes;
+// };
 
 struct MultiTarget
 {
