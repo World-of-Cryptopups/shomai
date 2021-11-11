@@ -110,13 +110,13 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
 
     // validate ingredients
     for (auto &i : ingredients) {
-        switch (i.index()) {
+        switch (i.props.index()) {
             case 0: {
                 // CHECK SCHEMA SLOT
 
-                auto _schema = get<SlotBlendSchemaIngredient>(i);
+                auto _schema = get<SlotBlendSchemaIngredient>(i.props);
 
-                auto itrSchemas = atomicassets::get_schemas(_schema.collection);
+                auto itrSchemas = atomicassets::get_schemas(i.collection);
                 itrSchemas.require_find(_schema.schema.value, "Schema does not exist in this collection!");
 
                 break;
@@ -124,9 +124,9 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
             case 1: {
                 // CHECK TEMPLATE SLOT
 
-                auto _template = get<SlotBlendTemplateIngredient>(i);
+                auto _template = get<SlotBlendTemplateIngredient>(i.props);
 
-                auto itrTemplates = atomicassets::get_templates(_template.collection);
+                auto itrTemplates = atomicassets::get_templates(i.collection);
                 for (auto &j : _template.templates) {
                     itrTemplates.require_find(uint64_t(j), "Template does not exist in this collection!");
                 }
@@ -136,9 +136,9 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
             case 2: {
                 // CHECK ATTRIBUTE SLOT
 
-                auto _attrib = get<SlotBlendAttribIngredient>(i);
+                auto _attrib = get<SlotBlendAttribIngredient>(i.props);
 
-                auto itrSchemas = atomicassets::get_schemas(_attrib.collection);
+                auto itrSchemas = atomicassets::get_schemas(i.collection);
                 auto itr = itrSchemas.require_find(_attrib.schema.value, "Schema does not exist in this collection!");
 
                 for (auto j : _attrib.attributes) {

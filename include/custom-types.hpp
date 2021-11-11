@@ -27,17 +27,11 @@ struct MultiBlendIngredient {
 };
 
 struct SlotBlendSchemaIngredient {
-    uint8_t type = 0;
-    name collection;
     name schema;
-    uint32_t amount;
 };
 
 struct SlotBlendTemplateIngredient {
-    uint8_t type = 1;
-    name collection;
     vector<uint32_t> templates;
-    uint32_t amount;
 };
 
 struct SlotBlendAttribValuesIngredient {
@@ -46,15 +40,21 @@ struct SlotBlendAttribValuesIngredient {
 };
 
 struct SlotBlendAttribIngredient {
-    uint8_t type = 2;
-    name collection;
     name schema;
     bool require_all_attribs;
     vector<SlotBlendAttribValuesIngredient> attributes;
-    uint32_t amount;
 };
 
-typedef std::variant<SlotBlendSchemaIngredient, SlotBlendTemplateIngredient, SlotBlendAttribIngredient> SlotBlendIngredient;
+typedef std::variant<SlotBlendSchemaIngredient, SlotBlendTemplateIngredient, SlotBlendAttribIngredient> SlotBlendIngredientProps;
+
+struct SlotBlendIngredient {
+    uint8_t type;
+    name collection;
+    uint32_t amount;
+    SlotBlendIngredientProps props;
+
+    EOSLIB_SERIALIZE(SlotBlendIngredient, (props))
+};
 
 /**
  * Ingredient for slot blending.

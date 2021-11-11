@@ -106,14 +106,14 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
     int lastIndex = 0;
 
     // CHECK ingredients in here
-    for (auto &i : itrBlender->ingredients) {
-        switch (i.index()) {
+    for (auto &j : itrBlender->ingredients) {
+        switch (j.props.index()) {
             case 0: {
                 // check if they have the required schemas
 
-                auto k = get<SlotBlendSchemaIngredient>(i);
+                auto k = get<SlotBlendSchemaIngredient>(j.props);
 
-                for (int i = 0; i < k.amount; i++) {
+                for (int i = 0; i < j.amount; i++) {
                     auto asset = assetids[lastIndex];
                     auto itr = validateasset(asset, blender);
                     check(itr->schema_name == k.schema, "The asset ingredient is not from the required slot schema!");
@@ -124,9 +124,9 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
                 break;
             }
             case 1: {
-                auto k = get<SlotBlendTemplateIngredient>(i);
+                auto k = get<SlotBlendTemplateIngredient>(j.props);
 
-                for (int i = 0; i < k.amount; i++) {
+                for (int i = 0; i < j.amount; i++) {
                     auto asset = assetids[lastIndex];
                     auto itr = validateasset(asset, blender);
 
@@ -149,14 +149,14 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
                 break;
             }
             case 2: {
-                auto k = get<SlotBlendAttribIngredient>(i);
+                auto k = get<SlotBlendAttribIngredient>(j.props);
 
-                auto itrSchemas = atomicassets::get_schemas(k.collection);
-                auto itrTemplates = atomicassets::get_templates(k.collection);
+                auto itrSchemas = atomicassets::get_schemas(j.collection);
+                auto itrTemplates = atomicassets::get_templates(j.collection);
 
                 auto itrSchema = itrSchemas.require_find(k.schema.value, "Schema does not exist in the ingredient's collection!");
 
-                for (int i = 0; i < k.amount; i++) {
+                for (int i = 0; i < j.amount; i++) {
                     auto asset = assetids[lastIndex];
                     auto itr = validateasset(asset, blender);
                     auto assetTemplate = itrTemplates.find(uint64_t(itr->template_id));
