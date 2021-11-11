@@ -199,6 +199,27 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
         }
     }
 
+    // check if there is only one target
+    auto blender_targets = get_blendertargets(scope);
+    auto itr_blender_targets = blender_targets.require_find(blenderid, "Blender's target pool does not exist.");
+
+    // if only one target, just mint and burn
+    if (itr_blender_targets->targets.size() == 1) {
+        auto _target = itr_blender_targets->targets[0];
+        auto _templates = atomicassets::get_templates(scope);
+
+        auto itr_target = _templates.require_find(_target.templateid, "Target template of blender does not exist!");
+
+        // time to swap and burn
+        mintasset(scope, itr_target->schema_name, _target.templateid, blender);
+        burnassets(assetids);
+
+        // remove nfts from refund
+        removeRefundNFTs(blender, scope, assetids);
+
+        return;
+    }
+
     // https://github.com/pinknetworkx/atomicpacks-contract/blob/master/src/unboxing.cpp#L206
     // Get signing value from transaction id
     size_t size = transaction_size();

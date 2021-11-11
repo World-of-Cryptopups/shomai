@@ -52,8 +52,6 @@ struct SlotBlendIngredient {
     name collection;
     uint32_t amount;
     SlotBlendIngredientProps props;
-
-    EOSLIB_SERIALIZE(SlotBlendIngredient, (props))
 };
 
 /**

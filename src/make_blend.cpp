@@ -105,26 +105,36 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
     // validate contract if authorized by collection
     check(isAuthorized(collection, get_self()), "Contract is not authorized in the collection!");
 
-    // check multitarget
-    validate_multitarget(collection, targets);
+    // check size and lengths
+    check(targets.size() != 0, "Required one or more targets.");
+    check(ingredients.size() != 0, "Required one or more ingredients.");
+
+    // check multitarget only if more than one target
+    if (targets.size() > 1) {
+        validate_multitarget(collection, targets);
+    }
 
     // validate ingredients
-    for (auto &i : ingredients) {
-        switch (i.props.index()) {
+    for (auto i : ingredients) {
+        check(i.amount > 0, ("Ingredient amount should be atleast one or more. " + i.collection.to_string()).c_str());
+
+        auto props = i.props;
+
+        switch (props.index()) {
             case 0: {
                 // CHECK SCHEMA SLOT
 
-                auto _schema = get<SlotBlendSchemaIngredient>(i.props);
+                auto _schema = get<SlotBlendSchemaIngredient>(props);
 
                 auto itrSchemas = atomicassets::get_schemas(i.collection);
-                itrSchemas.require_find(_schema.schema.value, "Schema does not exist in this collection!");
+                itrSchemas.require_find(_schema.schema.value, ("Schema does not exist in this collection! " + _schema.schema.to_string()).c_str());
 
                 break;
             }
             case 1: {
                 // CHECK TEMPLATE SLOT
 
-                auto _template = get<SlotBlendTemplateIngredient>(i.props);
+                auto _template = get<SlotBlendTemplateIngredient>(props);
 
                 auto itrTemplates = atomicassets::get_templates(i.collection);
                 for (auto &j : _template.templates) {
@@ -136,7 +146,7 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
             case 2: {
                 // CHECK ATTRIBUTE SLOT
 
-                auto _attrib = get<SlotBlendAttribIngredient>(i.props);
+                auto _attrib = get<SlotBlendAttribIngredient>(props);
 
                 auto itrSchemas = atomicassets::get_schemas(i.collection);
                 auto itr = itrSchemas.require_find(_attrib.schema.value, "Schema does not exist in this collection!");

@@ -1,1 +1,1 @@
-docker run --rm --name eosio.cdt_vlatest --volume "$PWD:/project" -w /project eostudio/eosio.cdt:vlatest /bin/bash -c "eosio-cpp -abigen -I include -R resource -contract shomaiiblend -o shomaiiblend.wasm src/shomaiiblend.cpp"
+docker run --rm --name eusubuntu_build --volume "$PWD:/project" -w /project eosubuntu /bin/bash -c "eosio-cpp -abigen -I include -R resource -contract shomaiiblend -o shomaiiblend.wasm src/shomaiiblend.cpp"
