@@ -3,8 +3,7 @@
 /**
  * Internal function for checking and validating a template ingredient.
 */
-void shomaiiblend::validate_template_ingredient(atomicassets::templates_t &templates, uint64_t assetid)
-{
+void shomaiiblend::validate_template_ingredient(atomicassets::templates_t &templates, uint64_t assetid) {
     auto itrIngredient = templates.find(assetid);
 
     check(itrIngredient != templates.end(), "Template ingredient does not exist in collection!");
@@ -15,15 +14,13 @@ void shomaiiblend::validate_template_ingredient(atomicassets::templates_t &templ
 /**
  * Internal function to validate the target outcomes.
 */
-void shomaiiblend::validate_multitarget(name collection, vector<MultiTarget> targets)
-{
+void shomaiiblend::validate_multitarget(name collection, vector<MultiTarget> targets) {
     uint32_t total_counted_odds = 0;
     uint32_t lastodd = UINT32_MAX;
 
     auto templates = atomicassets::get_templates(collection);
 
-    for (MultiTarget i : targets)
-    {
+    for (MultiTarget i : targets) {
         // check first if target template exists or not
         auto itrTemplate = templates.require_find(uint64_t(i.templateid), ("Target template does not exist in collection: " + to_string(i.templateid)).c_str());
 
@@ -39,8 +36,7 @@ void shomaiiblend::validate_multitarget(name collection, vector<MultiTarget> tar
     }
 
     // check only if there are more than 1 targets
-    if (targets.size() > 1)
-    {
+    if (targets.size() > 1) {
         check(total_counted_odds == TOTALODDS, "Totals odds of target outcomes does not equal the provided total odds.");
     }
 }

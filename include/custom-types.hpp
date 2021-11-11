@@ -12,46 +12,40 @@ using namespace std;
  *  - startdate :: when will the blend available
  *  - enddate :: when the blend will end 
 */
-struct BlendConfig
-{
-    int32_t maxuse = -1;     // -1 = (global use) infinite use
-    int32_t maxuseruse = -1; // -1 = (user use) infinite use
+struct BlendConfig {
+    int32_t maxuse = -1;      // -1 = (global use) infinite use
+    int32_t maxuseruse = -1;  // -1 = (user use) infinite use
     uint32_t uses;
 
-    int32_t startdate = -1; // -1, start as soon
-    int32_t enddate = -1;   // -1, does not end
+    int32_t startdate = -1;  // -1, start as soon
+    int32_t enddate = -1;    // -1, does not end
 };
 
-struct MultiBlendIngredient
-{
+struct MultiBlendIngredient {
     name collection;
     uint32_t ingredient;
 };
 
-struct SlotBlendSchemaIngredient
-{
+struct SlotBlendSchemaIngredient {
     uint8_t type = 0;
     name collection;
     name schema;
     uint32_t amount;
 };
 
-struct SlotBlendTemplateIngredient
-{
+struct SlotBlendTemplateIngredient {
     uint8_t type = 1;
     name collection;
     vector<uint32_t> templates;
     uint32_t amount;
 };
 
-struct SlotBlendAttribValuesIngredient
-{
+struct SlotBlendAttribValuesIngredient {
     string key;
     vector<string> allowed_values;
 };
 
-struct SlotBlendAttribIngredient
-{
+struct SlotBlendAttribIngredient {
     uint8_t type = 2;
     name collection;
     name schema;
@@ -82,8 +76,7 @@ typedef std::variant<SlotBlendSchemaIngredient, SlotBlendTemplateIngredient, Slo
 //     vector<SlotBlendIngredientAttributes> attributes;
 // };
 
-struct MultiTarget
-{
+struct MultiTarget {
     uint32_t odds;
     uint32_t templateid;
 };

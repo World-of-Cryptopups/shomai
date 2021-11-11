@@ -1,17 +1,16 @@
 #include <shomaiiblend.hpp>
 
-#include "make_blend.cpp"
-#include "remove_blend.cpp"
 #include "call_blend.cpp"
+#include "claims.cpp"
 #include "configs.cpp"
 #include "internals.cpp"
-#include "claims.cpp"
+#include "make_blend.cpp"
+#include "remove_blend.cpp"
 
 /**
  * Initialize singleton db.
 */
-ACTION shomaiiblend::init()
-{
+ACTION shomaiiblend::init() {
     require_auth(get_self());
 
     config.get_or_create(_self, config_s{});
@@ -20,16 +19,14 @@ ACTION shomaiiblend::init()
 /**
  * Remove NFTs from refunds. (for emergency / needed purposes)
 */
-ACTION shomaiiblend::clearrefunds(name scope)
-{
+ACTION shomaiiblend::clearrefunds(name scope) {
     require_auth(get_self());
 
     // remove all recorsd
     auto reftable = get_nftrefunds(scope);
     auto itr = reftable.begin();
 
-    while (itr != reftable.end())
-    {
+    while (itr != reftable.end()) {
         reftable.erase(itr);
     }
 }
@@ -37,11 +34,9 @@ ACTION shomaiiblend::clearrefunds(name scope)
 /**
  * Log NFT transfers for refund.
 */
-[[eosio::on_notify("atomicassets::transfer")]] void shomaiiblend::savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo)
-{
+[[eosio::on_notify("atomicassets::transfer")]] void shomaiiblend::savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo) {
     // ignore sent nfts by this contract
-    if (from == get_self())
-    {
+    if (from == get_self()) {
         return;
     }
 
@@ -52,14 +47,12 @@ ACTION shomaiiblend::clearrefunds(name scope)
     nftrefund_t refundtable = get_nftrefunds(from);
 
     // save all nfts
-    for (auto i : asset_ids)
-    {
-        refundtable.emplace(get_self(), [&](nftrefund_s &row)
-                            {
-                                row.assetid = i;
-                                row.collection = col;
-                                row.from = from;
-                            });
+    for (auto i : asset_ids) {
+        refundtable.emplace(get_self(), [&](nftrefund_s &row) {
+            row.assetid = i;
+            row.collection = col;
+            row.from = from;
+        });
     }
 }
 
@@ -67,19 +60,17 @@ ACTION shomaiiblend::clearrefunds(name scope)
  * Refund action for NFTs transferred but were not processed in blends.
  * 
 */
-ACTION shomaiiblend::refundnfts(name user, name scope, vector<uint64_t> assetids)
-{
+ACTION shomaiiblend::refundnfts(name user, name scope, vector<uint64_t> assetids) {
     require_auth(user);
     blockContract(user);
 
     auto refundtable = get_nftrefunds(user);
 
     // check all assets and confirm
-    for (auto i : assetids)
-    {
+    for (auto i : assetids) {
         auto itr = refundtable.require_find(i, "Asset does not exist in collection for refund!");
 
-        check(itr->collection == scope, "Asset's collection is not similar to scope!"); // useless check
+        check(itr->collection == scope, "Asset's collection is not similar to scope!");  // useless check
         check(itr->from == user, "Asset is not from user!");
     }
 

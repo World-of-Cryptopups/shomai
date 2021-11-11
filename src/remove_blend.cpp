@@ -4,8 +4,7 @@
  * Remove a Simple Blend.
  * User should be authorized by the collection blender.
 */
-ACTION shomaiiblend::remblsimple(name user, name scope, uint64_t blenderid)
-{
+ACTION shomaiiblend::remblsimple(name user, name scope, uint64_t blenderid) {
     require_auth(user);
     blockContract(user);
 
@@ -26,8 +25,7 @@ ACTION shomaiiblend::remblsimple(name user, name scope, uint64_t blenderid)
  * Remove a simple swap.
  * User should be authorized to do this.
 */
-ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid)
-{
+ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid) {
     require_auth(user);
     blockContract(user);
 
@@ -48,8 +46,7 @@ ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid)
  * Remove a Slot Blend.
  * User should be authorized by the collection blender.
 */
-ACTION shomaiiblend::remblslot(name user, name scope, uint64_t blenderid)
-{
+ACTION shomaiiblend::remblslot(name user, name scope, uint64_t blenderid) {
     require_auth(user);
     blockContract(user);
 

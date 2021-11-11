@@ -3,8 +3,7 @@
 /**
  * Create a Simple Blend (same collection only)
 */
-ACTION shomaiiblend::makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients)
-{
+ACTION shomaiiblend::makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients) {
     require_auth(author);
     blockContract(author);
 
@@ -24,8 +23,7 @@ ACTION shomaiiblend::makeblsimple(name author, name collection, uint32_t target,
     check(templates.find(target) != templates.end(), "Template does not exist in collection!");
 
     // validate ingredient templates
-    for (auto &i : ingredients)
-    {
+    for (auto &i : ingredients) {
         validate_template_ingredient(templates, i);
     }
 
@@ -38,21 +36,19 @@ ACTION shomaiiblend::makeblsimple(name author, name collection, uint32_t target,
     config.set(current_config, get_self());
 
     // create blend info
-    _simpleblends.emplace(author, [&](simpleblend_s &row)
-                          {
-                              row.blenderid = blenderid;
-                              row.author = author;
-                              row.collection = collection;
-                              row.target = target;
-                              row.ingredients = ingredients;
-                          });
+    _simpleblends.emplace(author, [&](simpleblend_s &row) {
+        row.blenderid = blenderid;
+        row.author = author;
+        row.collection = collection;
+        row.target = target;
+        row.ingredients = ingredients;
+    });
 }
 
 /**
  * Create a Simple Swap. (same collection only)
 */
-ACTION shomaiiblend::makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient)
-{
+ACTION shomaiiblend::makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient) {
     require_auth(author);
     blockContract(author);
 
@@ -83,23 +79,20 @@ ACTION shomaiiblend::makeswsimple(name author, name collection, uint32_t target,
     config.set(current_config, get_self());
 
     // create blend info
-    _simpleswaps.emplace(author, [&](simpleswap_s &row)
-                         {
-                             row.blenderid = blenderid;
-                             row.author = author;
-                             row.collection = collection;
-                             row.target = target;
-                             row.ingredient = ingredient;
-                         });
+    _simpleswaps.emplace(author, [&](simpleswap_s &row) {
+        row.blenderid = blenderid;
+        row.author = author;
+        row.collection = collection;
+        row.target = target;
+        row.ingredient = ingredient;
+    });
 }
 
-ACTION shomaiiblend::makeblmulti(name author)
-{
+ACTION shomaiiblend::makeblmulti(name author) {
     require_auth(author);
 }
 
-ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title)
-{
+ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title) {
     require_auth(author);
     blockContract(author);
 
@@ -116,65 +109,55 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
     validate_multitarget(collection, targets);
 
     // validate ingredients
-    for (auto &i : ingredients)
-    {
-        switch (i.index())
-        {
-        case 0:
-        {
-            // CHECK SCHEMA SLOT
+    for (auto &i : ingredients) {
+        switch (i.index()) {
+            case 0: {
+                // CHECK SCHEMA SLOT
 
-            auto _schema = get<SlotBlendSchemaIngredient>(i);
+                auto _schema = get<SlotBlendSchemaIngredient>(i);
 
-            auto itrSchemas = atomicassets::get_schemas(_schema.collection);
-            itrSchemas.require_find(_schema.schema.value, "Schema does not exist in this collection!");
+                auto itrSchemas = atomicassets::get_schemas(_schema.collection);
+                itrSchemas.require_find(_schema.schema.value, "Schema does not exist in this collection!");
 
-            break;
-        }
-        case 1:
-        {
-            // CHECK TEMPLATE SLOT
-
-            auto _template = get<SlotBlendTemplateIngredient>(i);
-
-            auto itrTemplates = atomicassets::get_templates(_template.collection);
-            for (auto &j : _template.templates)
-            {
-                itrTemplates.require_find(uint64_t(j), "Template does not exist in this collection!");
+                break;
             }
+            case 1: {
+                // CHECK TEMPLATE SLOT
 
-            break;
-        }
-        case 2:
-        {
-            // CHECK ATTRIBUTE SLOT
+                auto _template = get<SlotBlendTemplateIngredient>(i);
 
-            auto _attrib = get<SlotBlendAttribIngredient>(i);
-
-            auto itrSchemas = atomicassets::get_schemas(_attrib.collection);
-            auto itr = itrSchemas.require_find(_attrib.schema.value, "Schema does not exist in this collection!");
-
-            for (auto j : _attrib.attributes)
-            {
-                bool keyExists;
-
-                for (auto s : itr->format)
-                {
-                    if (s.name == j.key)
-                    {
-                        keyExists = true;
-                    }
+                auto itrTemplates = atomicassets::get_templates(_template.collection);
+                for (auto &j : _template.templates) {
+                    itrTemplates.require_find(uint64_t(j), "Template does not exist in this collection!");
                 }
 
-                check(keyExists, "Attribute key does not exist in schema!");
+                break;
             }
+            case 2: {
+                // CHECK ATTRIBUTE SLOT
 
-            break;
-        }
-        default:
-        {
-            check(false, "Invalid ignredient type!");
-        }
+                auto _attrib = get<SlotBlendAttribIngredient>(i);
+
+                auto itrSchemas = atomicassets::get_schemas(_attrib.collection);
+                auto itr = itrSchemas.require_find(_attrib.schema.value, "Schema does not exist in this collection!");
+
+                for (auto j : _attrib.attributes) {
+                    bool keyExists;
+
+                    for (auto s : itr->format) {
+                        if (s.name == j.key) {
+                            keyExists = true;
+                        }
+                    }
+
+                    check(keyExists, "Attribute key does not exist in schema!");
+                }
+
+                break;
+            }
+            default: {
+                check(false, "Invalid ignredient type!");
+            }
         }
     }
 
@@ -187,23 +170,21 @@ ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget
     auto mtargets = get_blendertargets(collection);
 
     // store slotblend
-    slotblends.emplace(author, [&](slotblend_s &row)
-                       {
-                           row.blenderid = blenderid;
-                           row.author = author;
+    slotblends.emplace(author, [&](slotblend_s &row) {
+        row.blenderid = blenderid;
+        row.author = author;
 
-                           row.collection = collection;
-                           row.ingredients = ingredients;
+        row.collection = collection;
+        row.ingredients = ingredients;
 
-                           row.title = title;
-                       });
+        row.title = title;
+    });
 
     // store multi targets
-    mtargets.emplace(author, [&](multitarget_s &row)
-                     {
-                         row.blenderid = blenderid;
-                         row.collection = collection;
+    mtargets.emplace(author, [&](multitarget_s &row) {
+        row.blenderid = blenderid;
+        row.collection = collection;
 
-                         row.targets = targets;
-                     });
+        row.targets = targets;
+    });
 }

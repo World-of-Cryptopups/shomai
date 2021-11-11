@@ -6,14 +6,13 @@
 */
 #pragma once
 
-#include <eosio/eosio.hpp>
-#include <eosio/singleton.hpp>
-#include <eosio/crypto.hpp>
-#include <eosio/transaction.hpp>
-
 #include <atomicassets.hpp>
 #include <atomicdata.hpp>
 #include <custom-types.hpp>
+#include <eosio/crypto.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/singleton.hpp>
+#include <eosio/transaction.hpp>
 #include <wax-orng.hpp>
 
 using namespace std;
@@ -23,341 +22,313 @@ using namespace eosio;
 
 const uint32_t TOTALODDS = 100;
 
-CONTRACT shomaiiblend : public contract
-{
-public:
-	using contract::contract;
+CONTRACT shomaiiblend : public contract {
+   public:
+    using contract::contract;
 
-	/* Start Blend Actions */
-	ACTION makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients);
-	ACTION makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient);
-	ACTION makeblmulti(name author);
-	ACTION makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title);
+    /* Start Blend Actions */
+    ACTION makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients);
+    ACTION makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient);
+    ACTION makeblmulti(name author);
+    ACTION makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title);
 
-	ACTION remblsimple(name user, name scope, uint64_t blenderid);
-	ACTION remswsimple(name user, name scope, uint64_t blenderid);
-	ACTION remblslot(name user, name scope, uint64_t blenderid);
+    ACTION remblsimple(name user, name scope, uint64_t blenderid);
+    ACTION remswsimple(name user, name scope, uint64_t blenderid);
+    ACTION remblslot(name user, name scope, uint64_t blenderid);
 
-	ACTION callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
-	ACTION callswsimple(uint64_t blenderid, name blender, name scope, uint64_t asset);
-	ACTION callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids, uint64_t claim_id);
+    ACTION callblsimple(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids);
+    ACTION callswsimple(uint64_t blenderid, name blender, name scope, uint64_t asset);
+    ACTION callblslot(uint64_t blenderid, name blender, name scope, vector<uint64_t> assetids, uint64_t claim_id);
 
-	ACTION claimblslot(uint64_t claim_id, name blender, name scope);
+    ACTION claimblslot(uint64_t claim_id, name blender, name scope);
 
-	ACTION setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config);
-	/* End Blend Actions */
+    ACTION setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config);
+    /* End Blend Actions */
 
-	/* Start ORNG Actions */
-	ACTION receiverand(uint64_t assoc_id, checksum256 random_value);
-	/* End ORNG Actions */
+    /* Start ORNG Actions */
+    ACTION receiverand(uint64_t assoc_id, checksum256 random_value);
+    /* End ORNG Actions */
 
-	/*  Start System actions */
-	ACTION init();
-	ACTION clearrefunds(name scope);
-	/*  End System actions */
+    /*  Start System actions */
+    ACTION init();
+    ACTION clearrefunds(name scope);
+    /*  End System actions */
 
-	/* Start Util actions */
-	ACTION refundnfts(name user, name scope, vector<uint64_t> assetids);
-	/* End Util actions */
+    /* Start Util actions */
+    ACTION refundnfts(name user, name scope, vector<uint64_t> assetids);
+    /* End Util actions */
 
-	/* Start Payable Actions */
-	[[eosio::on_notify("atomicassets::transfer")]] void savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo);
-	/* End Payable Actions */
+    /* Start Payable Actions */
+    [[eosio::on_notify("atomicassets::transfer")]] void savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo);
+    /* End Payable Actions */
 
-private:
-	/*
+   private:
+    /*
     Refund NFT Table.
      - This is where NFT transactions are logged for refund if there are failed transactions.
   */
-	TABLE nftrefund_s
-	{
-		uint64_t assetid;
-		name from;
-		name collection;
+    TABLE nftrefund_s {
+        uint64_t assetid;
+        name from;
+        name collection;
 
-		uint64_t primary_key() const { return assetid; };
-	};
+        uint64_t primary_key() const { return assetid; };
+    };
 
-	/*
+    /*
   Simple Blend (only from one collection)
 */
-	TABLE simpleblend_s
-	{
-		uint64_t blenderid;
-		name author; // author
+    TABLE simpleblend_s {
+        uint64_t blenderid;
+        name author;  // author
 
-		name collection;
-		uint32_t target;
-		vector<uint32_t> ingredients; // ingredients should only be from collection
+        name collection;
+        uint32_t target;
+        vector<uint32_t> ingredients;  // ingredients should only be from collection
 
-		uint64_t primary_key() const { return blenderid; };
-		// uint64_t by_collection() const { return collection.value; };
-	};
+        uint64_t primary_key() const { return blenderid; };
+        // uint64_t by_collection() const { return collection.value; };
+    };
 
-	/*
+    /*
   Multi Blend (cross-collection, )
   */
 
-	/*
+    /*
   Slot Blend (config-based)
  */
-	TABLE slotblend_s
-	{
-		uint64_t blenderid;
-		name author;
+    TABLE slotblend_s {
+        uint64_t blenderid;
+        name author;
 
-		name collection;
-		vector<SlotBlendIngredient> ingredients;
+        name collection;
+        vector<SlotBlendIngredient> ingredients;
 
-		string title;
+        string title;
 
-		uint64_t primary_key() const { return blenderid; };
-	};
+        uint64_t primary_key() const { return blenderid; };
+    };
 
-	/*
+    /*
   Simple Swap (swap assets, single collection)
 */
-	TABLE simpleswap_s
-	{
-		uint64_t blenderid;
-		name author;
+    TABLE simpleswap_s {
+        uint64_t blenderid;
+        name author;
 
-		name collection; // fromtemp and totemp can only be from similar collection
-		uint32_t ingredient;
-		uint32_t target;
+        name collection;  // fromtemp and totemp can only be from similar collection
+        uint32_t ingredient;
+        uint32_t target;
 
-		uint64_t primary_key() const { return blenderid; };
-		// uint64_t by_collection() const { return collection.value; };
-	};
+        uint64_t primary_key() const { return blenderid; };
+        // uint64_t by_collection() const { return collection.value; };
+    };
 
-	/*
+    /*
 	Multi Target pool.
 */
-	TABLE multitarget_s
-	{
-		uint64_t blenderid;
+    TABLE multitarget_s {
+        uint64_t blenderid;
 
-		name collection;
-		vector<MultiTarget> targets;
+        name collection;
+        vector<MultiTarget> targets;
 
-		uint64_t primary_key() const { return blenderid; };
-	};
+        uint64_t primary_key() const { return blenderid; };
+    };
 
-	/*
+    /*
 	Unclaimed NFTs from blends.
 	*/
-	TABLE claimassets_s
-	{
-		uint64_t claim_id;
+    TABLE claimassets_s {
+        uint64_t claim_id;
 
-		uint64_t blenderid;
-		name blender;
+        uint64_t blenderid;
+        name blender;
 
-		int32_t templateid;
-		vector<uint64_t> assets;
+        int32_t templateid;
+        vector<uint64_t> assets;
 
-		uint64_t primary_key() const { return claim_id; };
-	};
+        uint64_t primary_key() const { return claim_id; };
+    };
 
-	TABLE claimjob_s
-	{
-		uint64_t claim_id;
+    TABLE claimjob_s {
+        uint64_t claim_id;
 
-		uint64_t blenderid;
-		name blender;
-		name scope;				 // collection name
-		vector<uint64_t> assets; // ingredients
+        uint64_t blenderid;
+        name blender;
+        name scope;               // collection name
+        vector<uint64_t> assets;  // ingredients
 
-		uint64_t primary_key() const { return claim_id; };
-	};
+        uint64_t primary_key() const { return claim_id; };
+    };
 
-	/*
+    /*
     BlendConfigs
   */
-	TABLE blendconfig_s
-	{
-		uint64_t blenderid;
-		BlendConfig config;
+    TABLE blendconfig_s {
+        uint64_t blenderid;
+        BlendConfig config;
 
-		uint64_t primary_key() const { return blenderid; };
-	};
+        uint64_t primary_key() const { return blenderid; };
+    };
 
-	TABLE config_s
-	{
-		uint64_t blendercounter = 100000;
-		uint64_t claimcounter = 100000;
-	};
+    TABLE config_s {
+        uint64_t blendercounter = 100000;
+        uint64_t claimcounter = 100000;
+    };
 
-	typedef singleton<"configs"_n, config_s> config_t;
-	typedef multi_index<"configs"_n, config_s> config_t_for_abi;
+    typedef singleton<"configs"_n, config_s> config_t;
+    typedef multi_index<"configs"_n, config_s> config_t_for_abi;
 
-	typedef multi_index<"simblenders"_n, simpleblend_s> simblender_t;
-	typedef multi_index<"slotblenders"_n, slotblend_s> slotblend_t;
-	typedef multi_index<"simswaps"_n, simpleswap_s> simswap_t;
+    typedef multi_index<"simblenders"_n, simpleblend_s> simblender_t;
+    typedef multi_index<"slotblenders"_n, slotblend_s> slotblend_t;
+    typedef multi_index<"simswaps"_n, simpleswap_s> simswap_t;
 
-	typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
-	typedef multi_index<"nftrefunds"_n, nftrefund_s> nftrefund_t;
+    typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
+    typedef multi_index<"nftrefunds"_n, nftrefund_s> nftrefund_t;
 
-	typedef multi_index<"targetpools"_n, multitarget_s> multitargetpool_t;
-	typedef multi_index<"claimassets"_n, claimassets_s> claimassets_t;
-	typedef multi_index<"claimjobs"_n, claimjob_s> claimjob_t;
+    typedef multi_index<"targetpools"_n, multitarget_s> multitargetpool_t;
+    typedef multi_index<"claimassets"_n, claimassets_s> claimassets_t;
+    typedef multi_index<"claimjobs"_n, claimjob_s> claimjob_t;
 
-	//  indexed_by<"collection"_n, const_mem_fun<simpleswap_s, uint64_t, &simpleswap_s::by_collection>>
+    //  indexed_by<"collection"_n, const_mem_fun<simpleswap_s, uint64_t, &simpleswap_s::by_collection>>
 
-	/* Initialize tables */
-	config_t config = config_t(_self, _self.value);
-	claimjob_t claimjobs = claimjob_t(_self, _self.value);
+    /* Initialize tables */
+    config_t config = config_t(_self, _self.value);
+    claimjob_t claimjobs = claimjob_t(_self, _self.value);
 
-	/* Internal get tables by scope. */
+    /* Internal get tables by scope. */
 
-	// get simple blends of collecton
-	simblender_t get_simpleblends(name collection)
-	{
-		return simblender_t(_self, collection.value);
-	}
+    // get simple blends of collecton
+    simblender_t get_simpleblends(name collection) {
+        return simblender_t(_self, collection.value);
+    }
 
-	// get simple swaps of collection
-	simswap_t get_simpleswaps(name collection)
-	{
-		return simswap_t(_self, collection.value);
-	}
+    // get simple swaps of collection
+    simswap_t get_simpleswaps(name collection) {
+        return simswap_t(_self, collection.value);
+    }
 
-	// get slot blends of collection
-	slotblend_t get_slotblends(name collection)
-	{
-		return slotblend_t(_self, collection.value);
-	}
+    // get slot blends of collection
+    slotblend_t get_slotblends(name collection) {
+        return slotblend_t(_self, collection.value);
+    }
 
-	// get blendconfigs of collection
-	blendconfig_t get_blendconfigs(name collection)
-	{
-		return blendconfig_t(_self, collection.value);
-	}
+    // get blendconfigs of collection
+    blendconfig_t get_blendconfigs(name collection) {
+        return blendconfig_t(_self, collection.value);
+    }
 
-	// get nft refunds of collection (use user as scope)
-	nftrefund_t get_nftrefunds(name user)
-	{
-		return nftrefund_t(_self, user.value);
-	}
+    // get nft refunds of collection (use user as scope)
+    nftrefund_t get_nftrefunds(name user) {
+        return nftrefund_t(_self, user.value);
+    }
 
-	// get multitarget pool
-	multitargetpool_t get_blendertargets(name collection)
-	{
-		return multitargetpool_t(_self, collection.value);
-	}
+    // get multitarget pool
+    multitargetpool_t get_blendertargets(name collection) {
+        return multitargetpool_t(_self, collection.value);
+    }
 
-	// get claim assets
-	claimassets_t get_claimassets(name collection)
-	{
-		return claimassets_t(_self, collection.value);
-	}
+    // get claim assets
+    claimassets_t get_claimassets(name collection) {
+        return claimassets_t(_self, collection.value);
+    }
 
-	// ======== util functions
-	void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
-	void validate_multitarget(name collection, vector<MultiTarget> targets);
+    // ======== util functions
+    void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
+    void validate_multitarget(name collection, vector<MultiTarget> targets);
 
-	/**
+    /**
 	 * Checks if the asset is transferred to the smart contract and if it exists in the refund table.
 	 * 
 	 * Returns the asset iterator.
 	*/
-	atomicassets::assets_t::const_iterator validateasset(uint64_t asset, name owner)
-	{
-		auto itrAssets = atomicassets::get_assets(get_self());
-		auto itr = itrAssets.require_find(asset, "The asset is not transferred to the smart contract for blending!");
+    atomicassets::assets_t::const_iterator validateasset(uint64_t asset, name owner) {
+        auto itrAssets = atomicassets::get_assets(get_self());
+        auto itr = itrAssets.require_find(asset, "The asset is not transferred to the smart contract for blending!");
 
-		checkfromrefund(asset, owner);
+        checkfromrefund(asset, owner);
 
-		return itr;
-	}
+        return itr;
+    }
 
-	/**
+    /**
 	 * Checks and confirms if the asset is in the nftrefunds table within the scope of the owner.
 	*/
-	void checkfromrefund(uint64_t assetid, name owner)
-	{
-		auto refunds = get_nftrefunds(owner);
-		refunds.require_find(assetid, "The asset does not exist or is not transferred by the user to the smart contract!");
-	}
+    void checkfromrefund(uint64_t assetid, name owner) {
+        auto refunds = get_nftrefunds(owner);
+        refunds.require_find(assetid, "The asset does not exist or is not transferred by the user to the smart contract!");
+    }
 
-	/*
+    /*
     Remove NFTs from refund after a successfull action.
   */
-	void removeRefundNFTs(name from, name collection, vector<uint64_t> assetids)
-	{
-		auto refundtable = get_nftrefunds(from);
+    void removeRefundNFTs(name from, name collection, vector<uint64_t> assetids) {
+        auto refundtable = get_nftrefunds(from);
 
-		for (auto i : assetids)
-		{
-			auto itr = refundtable.find(i);
+        for (auto i : assetids) {
+            auto itr = refundtable.find(i);
 
-			// some checking in here for sure
-			check(itr->from == from, "The asset does not come from you!");
-			check(itr->collection == collection, "The asset was not sent to the collection's blend."); // kind of useless check in here
+            // some checking in here for sure
+            check(itr->from == from, "The asset does not come from you!");
+            check(itr->collection == collection, "The asset was not sent to the collection's blend.");  // kind of useless check in here
 
-			// remove it
-			refundtable.erase(itr);
-		}
-	}
+            // remove it
+            refundtable.erase(itr);
+        }
+    }
 
-	/*
+    /*
       Check if user is authorized to mint NFTs
    */
-	bool isAuthorized(name collection, name user)
-	{
-		auto itr = atomicassets::collections.require_find(collection.value, "No collection with this name exists!");
-		bool authorized = false;
-		vector<name> accs = itr->authorized_accounts;
-		for (auto it = accs.begin(); it != accs.end() && !authorized; it++)
-		{
-			if (user == name(*it))
-			{
-				authorized = true;
-			}
-		}
-		return authorized;
-	}
+    bool isAuthorized(name collection, name user) {
+        auto itr = atomicassets::collections.require_find(collection.value, "No collection with this name exists!");
+        bool authorized = false;
+        vector<name> accs = itr->authorized_accounts;
+        for (auto it = accs.begin(); it != accs.end() && !authorized; it++) {
+            if (user == name(*it)) {
+                authorized = true;
+            }
+        }
+        return authorized;
+    }
 
-	/*
+    /*
       Call AtomicAssets contract to mint a new NFT
    */
-	void mintasset(name collection, name schema, uint64_t templateid, name to)
-	{
-		vector<asset> back_tokens;
-		atomicassets::ATTRIBUTE_MAP nodata = {};
+    void mintasset(name collection, name schema, uint64_t templateid, name to) {
+        vector<asset> back_tokens;
+        atomicassets::ATTRIBUTE_MAP nodata = {};
 
-		int32_t _template = int32_t(templateid);
+        int32_t _template = int32_t(templateid);
 
-		// call contract
-		action(
-			permission_level{get_self(), name("active")},
-			ATOMICASSETS,
-			name("mintasset"),
-			make_tuple(get_self(), collection, schema, _template, to, nodata, nodata, back_tokens))
-			.send();
-	}
+        // call contract
+        action(
+            permission_level{get_self(), name("active")},
+            ATOMICASSETS,
+            name("mintasset"),
+            make_tuple(get_self(), collection, schema, _template, to, nodata, nodata, back_tokens))
+            .send();
+    }
 
-	/*
+    /*
       Call AtomicAssets contract to burn NFTs
       (multiple assets)
    */
-	void burnassets(vector<uint64_t> assets)
-	{
-		for (auto it : assets)
-		{
-			action(permission_level{get_self(), name("active")},
-				   ATOMICASSETS,
-				   name("burnasset"),
-				   make_tuple(get_self(), it))
-				.send();
-		}
-	}
+    void burnassets(vector<uint64_t> assets) {
+        for (auto it : assets) {
+            action(permission_level{get_self(), name("active")},
+                   ATOMICASSETS,
+                   name("burnasset"),
+                   make_tuple(get_self(), it))
+                .send();
+        }
+    }
 
-	/*
+    /*
   Block the smart contract from calling own functions.
   */
-	void blockContract(name caller)
-	{
-		check(caller != _self, "The smart contract should not call any of it's own functions!");
-	}
+    void blockContract(name caller) {
+        check(caller != _self, "The smart contract should not call any of it's own functions!");
+    }
 };
