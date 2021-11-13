@@ -53,4 +53,7 @@ ACTION shomaiiblend::claimblslot(uint64_t claim_id, name blender, name scope) {
 
     mintasset(scope, itrTemplate->schema_name, itrClaim->templateid, blender);
     burnassets(itrClaim->assets);
+
+    // remove the claim
+    claimassets.erase(itrClaim);
 }
