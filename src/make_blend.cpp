@@ -88,8 +88,18 @@ ACTION shomaiiblend::makeswsimple(name author, name collection, uint32_t target,
     });
 }
 
-ACTION shomaiiblend::makeblmulti(name author) {
+ACTION shomaiiblend::makeblmulti(name author, name collection, uint32_t target, vector<MultiBlendIngredient> ingredients, string title) {
     require_auth(author);
+    blockContract(author);
+
+    // validate target collection
+    auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
+
+    // validate author
+    check(isAuthorized(collection, author), "You are not authorized in this collection!");
+
+    // validate contract is authorized by collection
+    check(isAuthorized(collection, author), "Contract is not authorized in the collection!");
 }
 
 ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title) {

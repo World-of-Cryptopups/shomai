@@ -29,7 +29,7 @@ CONTRACT shomaiiblend : public contract {
     /* Start Blend Actions */
     ACTION makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients);
     ACTION makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient);
-    ACTION makeblmulti(name author);
+    ACTION makeblmulti(name author, name collection, uint32_t target, vector<MultiBlendIngredient> ingredients, string title);
     ACTION makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title);
 
     ACTION remblsimple(name user, name scope, uint64_t blenderid);
@@ -93,6 +93,18 @@ CONTRACT shomaiiblend : public contract {
     /*
   Multi Blend (cross-collection, )
   */
+    TABLE multiblend_s {
+        uint64_t blenderid;
+        name author;
+
+        name collection;
+        uint32_t target;
+        vector<MultiBlendIngredient> ingredients;
+
+        string title;
+
+        uint64_t primary_key() const { return blenderid; };
+    };
 
     /*
   Slot Blend (config-based)
