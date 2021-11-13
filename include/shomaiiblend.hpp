@@ -265,6 +265,41 @@ CONTRACT shomaiiblend : public contract {
         return claimassets_t(_self, collection.value);
     }
 
+    // get blender id
+    uint64_t get_blenderid() {
+        // get burner counter
+        config_s current_config = config.get();
+        uint64_t blenderid = current_config.blendercounter++;
+        config.set(current_config, get_self());
+
+        return blenderid;
+    }
+
+    // get the collection from the atomicassets contract
+    atomicassets::collections_t::const_iterator get_collection(name author, name collection) {
+        // validate target collection
+        auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
+
+        // validate author
+        check(isAuthorized(collection, author), "You are not authorized in this collection!");
+
+        // validate contract is authorized by collection
+        check(isAuthorized(collection, author), "Contract is not authorized in the collection!");
+
+        return itrCol;
+    }
+
+    // get the target template iterator
+    atomicassets::templates_t::const_iterator get_target_template(name scope, uint64_t target_template) {
+        auto templates = atomicassets::get_templates(scope);
+        auto itrTemplate = templates.require_find(target_template, "Target template not found from collection!");
+
+        // check collection mint limit and supply
+        check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
+
+        return itrTemplate;
+    }
+
     // ======== util functions
     void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
     void validate_multitarget(name collection, vector<MultiTarget> targets);

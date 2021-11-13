@@ -49,9 +49,7 @@ ACTION shomaiiblend::claimblslot(uint64_t claim_id, name blender, name scope) {
     check(itrClaim->blender == blender, "Claim blender is not similar with the caller!");  // check if claimer is same with blender, unnecessary?
 
     // get claim template
-    auto templates = atomicassets::get_templates(scope);
-    auto itrTemplate = templates.find(itrClaim->templateid);
-    check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
+    auto itrTemplate = get_target_template(scope, uint64_t(itrClaim->templateid));
 
     mintasset(scope, itrTemplate->schema_name, itrClaim->templateid, blender);
     burnassets(itrClaim->assets);

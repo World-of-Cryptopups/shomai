@@ -44,4 +44,7 @@ void shomaiiblend::validate_multitarget(name collection, vector<MultiTarget> tar
 void shomaiiblend::validate_caller(name user, name collection) {
     require_auth(user);
     blockContract(user);
+
+    check(!isWhitelisted(collection), "Collection is not whitelisted to use this service! Please ask the owner to whitelist you.");
+    check(!isBlacklisted(collection), "Collection is blacklisted from service!");
 }

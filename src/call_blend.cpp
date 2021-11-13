@@ -19,10 +19,7 @@ ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, 
     // check if the smart contract is authorized in the collection
     check(isAuthorized(itr->collection, get_self()), "Smart Contract is not authorized for the blend's collection!");
 
-    // check collection mint limit and supply
-    auto templates = atomicassets::get_templates(scope);
-    auto itrTemplate = templates.require_find(itr->target, "Target template not found from collection!");
-    check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
+    auto itrTemplate = get_target_template(scope, uint64_t(itr->target));
 
     // get id templates of assets
     vector<uint32_t> ingredients = itr->ingredients;
@@ -67,10 +64,7 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
     // check if the smart contract is authorized in the collection
     check(isAuthorized(itr->collection, get_self()), "Smart Contract is not authorized for the blend's collection!");
 
-    // check collection mint limit and supply
-    auto templates = atomicassets::get_templates(scope);
-    auto itrTemplate = templates.require_find(itr->target, "Target template not found from collection!");
-    check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
+    auto itrTemplate = get_target_template(scope, uint64_t(itr->target));
 
     // get id template of asset
     auto assets = atomicassets::get_assets(get_self());
@@ -97,10 +91,9 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
     require_auth(blender);
 
     // check claim_id very first
-    check(claimjobs.find(claim_id) == claimjobs.end(), "Generate another unique claim id!");
+    check(claimjobs.find(claim_id) == claimjobs.end(), "Generate another unique claim id! Try to refresh and try again.");
 
     auto _slotblends = get_slotblends(scope);
-
     auto itrBlender = _slotblends.require_find(blenderid, "Slot Blender does not exist!");
 
     int lastIndex = 0;
@@ -208,7 +201,7 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
         auto _target = itr_blender_targets->targets[0];
         auto _templates = atomicassets::get_templates(scope);
 
-        auto itr_target = _templates.require_find(_target.templateid, "Target template of blender does not exist!");
+        auto itr_target = get_target_template(scope, uint64_t(_target.templateid));
 
         // time to swap and burn
         mintasset(scope, itr_target->schema_name, _target.templateid, blender);
