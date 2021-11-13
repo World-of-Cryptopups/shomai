@@ -8,12 +8,61 @@
 #include "remove_blend.cpp"
 
 /**
- * Initialize singleton db.
+ * Initialize main config singleton db.
 */
 ACTION shomaiiblend::init() {
     require_auth(get_self());
 
     config.get_or_create(_self, config_s{});
+}
+
+/**
+ * Initialize system config singleton db.
+*/
+ACTION shomaiiblend::initsys() {
+    require_auth(get_self());
+
+    sysconfig.get_or_create(_self, sysconfig_s{});
+}
+
+/**
+ * Add a collection to the service whitelists.
+*/
+ACTION shomaiiblend::sysaddwhite(name collection) {
+    require_auth(get_self());
+
+    // require check if collection exists or not
+    atomicassets::collections.require_find(collection.value, "Collection does not exist!");
+
+    auto _sysconfig = sysconfig.get();
+
+    if (find(_sysconfig.whitelists.begin(), _sysconfig.whitelists.end(), collection) == _sysconfig.whitelists.end()) {
+        // if collection does not exist, push it to the vector
+        _sysconfig.whitelists.push_back(collection);
+
+        // set new whitelist collections
+        sysconfig.set(_sysconfig, get_self());
+    }
+}
+
+/**
+ * Add a collection to the service blacklist.
+*/
+ACTION shomaiiblend::sysaddblack(name collection) {
+    require_auth(get_self());
+
+    // require check if collection exists or not
+    atomicassets::collections.require_find(collection.value, "Collection does not exist!");
+
+    auto _sysconfig = sysconfig.get();
+
+    if (find(_sysconfig.blacklists.begin(), _sysconfig.blacklists.end(), collection) == _sysconfig.blacklists.end()) {
+        // if collection does not exist, push it to the vector
+        _sysconfig.blacklists.push_back(collection);
+
+        // set new whitelist collections
+        sysconfig.set(_sysconfig, get_self());
+    }
 }
 
 /**

@@ -40,3 +40,8 @@ void shomaiiblend::validate_multitarget(name collection, vector<MultiTarget> tar
         check(total_counted_odds == TOTALODDS, "Totals odds of target outcomes does not equal the provided total odds.");
     }
 }
+
+void shomaiiblend::validate_caller(name user, name collection) {
+    require_auth(user);
+    blockContract(user);
+}

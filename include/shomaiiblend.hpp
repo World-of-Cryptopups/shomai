@@ -51,6 +51,9 @@ CONTRACT shomaiiblend : public contract {
 
     /*  Start System actions */
     ACTION init();
+    ACTION initsys();
+    ACTION sysaddwhite(name collection);
+    ACTION sysaddblack(name collection);
     ACTION clearrefunds(name scope);
     /*  End System actions */
 
@@ -63,6 +66,14 @@ CONTRACT shomaiiblend : public contract {
     /* End Payable Actions */
 
    private:
+    /*
+   System configuration singleton table.
+   */
+    TABLE sysconfig_s {
+        vector<name> whitelists;
+        vector<name> blacklists;
+    };
+
     /*
     Refund NFT Table.
      - This is where NFT transactions are logged for refund if there are failed transactions.
@@ -191,8 +202,11 @@ CONTRACT shomaiiblend : public contract {
 
     typedef singleton<"configs"_n, config_s> config_t;
     typedef multi_index<"configs"_n, config_s> config_t_for_abi;
+    typedef singleton<"sysconfigs"_n, sysconfig_s> sysconfig_t;
+    typedef multi_index<"sysconfigs"_n, sysconfig_s> sysconfig_t_for_abi;
 
     typedef multi_index<"simblenders"_n, simpleblend_s> simblender_t;
+    typedef multi_index<"multblenders"_n, multiblend_s> multiblend_t;
     typedef multi_index<"slotblenders"_n, slotblend_s> slotblend_t;
     typedef multi_index<"simswaps"_n, simpleswap_s> simswap_t;
 
@@ -207,6 +221,7 @@ CONTRACT shomaiiblend : public contract {
 
     /* Initialize tables */
     config_t config = config_t(_self, _self.value);
+    sysconfig_t sysconfig = sysconfig_t(_self, _self.value);
     claimjob_t claimjobs = claimjob_t(_self, _self.value);
 
     /* Internal get tables by scope. */
@@ -219,6 +234,10 @@ CONTRACT shomaiiblend : public contract {
     // get simple swaps of collection
     simswap_t get_simpleswaps(name collection) {
         return simswap_t(_self, collection.value);
+    }
+
+    multiblend_t get_multiblends(name collection) {
+        return multiblend_t(_self, collection.value);
     }
 
     // get slot blends of collection
@@ -249,6 +268,25 @@ CONTRACT shomaiiblend : public contract {
     // ======== util functions
     void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
     void validate_multitarget(name collection, vector<MultiTarget> targets);
+    void validate_caller(name user, name collection);
+
+    /**
+     * Checks if the collection is whitelisted.
+    */
+    bool isWhitelisted(name collection) {
+        auto _sysconfig = sysconfig.get();
+
+        return find(_sysconfig.whitelists.begin(), _sysconfig.whitelists.end(), collection) != _sysconfig.whitelists.end();
+    }
+
+    /**
+     * Checks if the collection is blacklisted.
+    */
+    bool isBlacklisted(name collection) {
+        auto _sysconfig = sysconfig.get();
+
+        return find(_sysconfig.blacklists.begin(), _sysconfig.blacklists.end(), collection) != _sysconfig.blacklists.end();
+    }
 
     /**
 	 * Checks if the asset is transferred to the smart contract and if it exists in the refund table.
