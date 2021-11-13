@@ -398,7 +398,6 @@ CONTRACT shomaiiblend : public contract {
 
     /*
       Call AtomicAssets contract to burn NFTs
-      (multiple assets)
    */
     void burnassets(vector<uint64_t> assets) {
         for (auto it : assets) {
@@ -408,6 +407,18 @@ CONTRACT shomaiiblend : public contract {
                    make_tuple(get_self(), it))
                 .send();
         }
+    }
+
+    /*
+    Call AtomicAssets contract to transfer assets
+*/
+    void transferassets(vector<uint64_t> assets, name to) {
+        action(
+            permission_level{get_self(), name("active")},
+            ATOMICASSETS,
+            name("transfer"),
+            make_tuple(get_self(), to, assets, string("transfer from contract")))
+            .send();
     }
 
     /*

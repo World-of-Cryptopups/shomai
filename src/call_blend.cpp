@@ -60,6 +60,7 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
 
     // validate scope
     check(itr->collection == scope, "Scope does not own blender!");
+    auto itrCol = atomicassets::collections.require_find(itr->collection.value, "Collection does not exist!");
 
     // check if the smart contract is authorized in the collection
     check(isAuthorized(itr->collection, get_self()), "Smart Contract is not authorized for the blend's collection!");
@@ -78,7 +79,9 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
     // time to swap and burn
     mintasset(itr->collection, itrTemplate->schema_name, itr->target, blender);
     vector<uint64_t> assetids = {assetid};
-    burnassets(assetids);
+
+    // transfer the assets to the owner of the collection
+    transferassets(assetids, itrCol->author);
 
     // remove nfts from refund
     removeRefundNFTs(blender, scope, assetids);
