@@ -32,7 +32,7 @@ void shomaiiblend::validate_multitarget(name collection, vector<MultiTarget> tar
         check(total_counted_odds >= i.odds, "Overflow: Total odds can't be more than 2^32 - 1.");
 
         // this is a multi target blend, so it should not have a max supply.
-        check(itrTemplate->max_supply == 0, "Can only use templates without a max supply");
+        check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Can only use templates without a max supply.");
     }
 
     // check only if there are more than 1 targets
