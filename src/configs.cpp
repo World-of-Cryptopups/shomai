@@ -31,6 +31,22 @@ void shomaiiblend::check_config(uint64_t blenderid, name blender, name scope) {
 }
 
 /**
+ * This is called when removing a blend.
+ * An authorization check should be called before calling this one.
+ * The difference with setconfig is that it checks if the config is set or not and raises an error.
+*/
+void shomaiiblend::remove_blend_config(uint64_t blenderid, name author, name scope) {
+    auto _blendconfig = get_blendconfigs(scope);
+    auto itrConfig = _blendconfig.find(blenderid);
+
+    // do not remove if no config set
+    if (itrConfig == _blendconfig.end()) return;
+
+    // erase the config
+    _blendconfig.erase(itrConfig);
+}
+
+/**
  * This action is set to enable / disable a blend config.
  * If enabled, it will initialize a new config, otherwise, it will be erased.
 */
@@ -116,7 +132,7 @@ ACTION shomaiiblend::setdates(name author, uint64_t blenderid, name scope, int32
         check(now() < startdate, "Start date should be greater than now.");
         check(now() < enddate, "End date should be greater than now.");
         check(enddate > startdate, "End date should be greater than the startdate.");
-        }
+    }
 
     _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row) {
         if (startdate != 0) {

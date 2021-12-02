@@ -317,6 +317,7 @@ CONTRACT shomaiiblend : public contract {
     void validate_caller(name user, name collection);
 
     void check_config(uint64_t blenderid, name blender, name scope);
+    void remove_blend_config(uint64_t blenderid, name author, name scope);
     blendconfig_t::const_iterator set_config_check(name author, uint64_t blenderid, name scope);
 
     // ======== sys configs

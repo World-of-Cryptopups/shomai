@@ -9,16 +9,16 @@ ACTION shomaiiblend::remblsimple(name user, name scope, uint64_t blenderid) {
     blockContract(user);
 
     auto _simpleblends = get_simpleblends(scope);
-    auto itr = _simpleblends.find(blenderid);
-
-    // check if blenderid exists
-    check(itr != _simpleblends.end(), "Burner ID does not exist!");
+    auto itr = _simpleblends.require_find(blenderid, "Burner ID does not exist!");
 
     // check if user is authorized in collection
     check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
 
     // remove item
     _simpleblends.erase(itr);
+
+    // remove blend config if it exists
+    remove_blend_config(blenderid, user, scope);
 }
 
 /**
@@ -30,16 +30,16 @@ ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid) {
     blockContract(user);
 
     auto _simpleswaps = get_simpleswaps(scope);
-    auto itr = _simpleswaps.find(blenderid);
-
-    // check if blenderid exists
-    check(itr != _simpleswaps.end(), "Swapper ID does not exist!");
+    auto itr = _simpleswaps.require_find(blenderid, "Swapper ID does not exist!");
 
     // check if blenderid author/user is user
     check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
 
     // remove item
     _simpleswaps.erase(itr);
+
+    // remove blend config if it exists
+    remove_blend_config(blenderid, user, scope);
 }
 
 /**
@@ -51,14 +51,14 @@ ACTION shomaiiblend::remblslot(name user, name scope, uint64_t blenderid) {
     blockContract(user);
 
     auto _slotblends = get_slotblends(scope);
-    auto itr = _slotblends.find(blenderid);
-
-    // check if blenderid exists
-    check(itr != _slotblends.end(), "Burner ID does not exist!");
+    auto itr = _slotblends.require_find(blenderid, "Burner ID does not exist!");
 
     // check if user is authorized in collection
     check(isAuthorized(itr->collection, user), "User is not authorized in this collection!");
 
     // remove item
     _slotblends.erase(itr);
+
+    // remove blend config if it exists
+    remove_blend_config(blenderid, user, scope);
 }
