@@ -8,10 +8,10 @@ ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, 
     blockContract(blender);
 
     auto _simpleblends = get_simpleblends(scope);
-    auto itr = _simpleblends.find(blenderid);
+    auto itr = _simpleblends.require_find(blenderid, "Burner blend does not exist!");
 
-    // validate blenderid
-    check(itr != _simpleblends.end(), "Burner blend does not exist!");
+    // check first the blend's config
+    check_config(blenderid, blender, scope);
 
     // validate scope
     check(itr->collection == scope, "Scope does not own blender!");
@@ -53,10 +53,10 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
     blockContract(blender);
 
     auto _simpleswaps = get_simpleswaps(scope);
-    auto itr = _simpleswaps.find(blenderid);
+    auto itr = _simpleswaps.require_find(blenderid, "Swapper blend does not exist!");
 
-    // validate blenderid
-    check(itr != _simpleswaps.end(), "Swapper blend does not exist!");
+    // check first the blend's config
+    check_config(blenderid, blender, scope);
 
     // validate scope
     check(itr->collection == scope, "Scope does not own blender!");
@@ -98,6 +98,9 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
 
     auto _slotblends = get_slotblends(scope);
     auto itrBlender = _slotblends.require_find(blenderid, "Slot Blender does not exist!");
+
+    // check first the blend's config
+    check_config(blenderid, blender, scope);
 
     int lastIndex = 0;
 

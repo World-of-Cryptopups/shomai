@@ -1,9 +1,9 @@
 #include <shomaiiblend.hpp>
 
+#include "internals.cpp"
 #include "call_blend.cpp"
 #include "claims.cpp"
 #include "configs.cpp"
-#include "internals.cpp"
 #include "make_blend.cpp"
 #include "remove_blend.cpp"
 

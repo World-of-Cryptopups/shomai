@@ -42,7 +42,11 @@ CONTRACT shomaiiblend : public contract {
 
     ACTION claimblslot(uint64_t claim_id, name blender, name scope);
 
-    ACTION setblsimconf(name author, uint64_t blenderid, name scope, BlendConfig config);
+    ACTION setconfig(name author, uint64_t blenderid, name scope, bool enable);
+    ACTION setwhitelist(name author, uint64_t blenderid, name scope, vector<name> names_list);
+    ACTION setonwhlist(name author, uint64_t blenderid, name scope, bool on_whitelist);
+    ACTION setdates(name author, uint64_t blenderid, name scope, int32_t startdate, int32_t enddate);
+    ACTION setmax(name author, uint64_t blenderid, name scope, int32_t maxuse, int32_t maxuseruse);
     /* End Blend Actions */
 
     /* Start ORNG Actions */
@@ -190,7 +194,29 @@ CONTRACT shomaiiblend : public contract {
   */
     TABLE blendconfig_s {
         uint64_t blenderid;
-        BlendConfig config;
+
+        int32_t maxuse = -1;      // -1 = (global use) infinite use, 0 = disabled
+        int32_t maxuseruse = -1;  // -1 = (user use) infinite use
+        uint32_t total_uses = 0;  // this is the current blend total use
+
+        int32_t startdate = -1;  // -1, start as soon
+        int32_t enddate = -1;    // -1, does not end
+
+        vector<name> whitelists;  // for whitelisting
+        bool enable_whitelists;   // on whitelists, even if this is changed, the `whitelists` field will not be changed nor modified
+
+        uint64_t primary_key() const { return blenderid; };
+    };
+
+    /**
+     * Blend uses management. This table stores the blend uses per user.
+    */
+    TABLE blendconfiguses_s {
+        uint64_t blenderid;
+
+        name blender;
+        int32_t last_used;
+        int32_t total_uses;
 
         uint64_t primary_key() const { return blenderid; };
     };
@@ -211,6 +237,7 @@ CONTRACT shomaiiblend : public contract {
     typedef multi_index<"simswaps"_n, simpleswap_s> simswap_t;
 
     typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
+    typedef multi_index<"blendcfuses"_n, blendconfiguses_s> blendconfiguses_t;
     typedef multi_index<"nftrefunds"_n, nftrefund_s> nftrefund_t;
 
     typedef multi_index<"targetpools"_n, multitarget_s> multitargetpool_t;
@@ -250,6 +277,11 @@ CONTRACT shomaiiblend : public contract {
         return blendconfig_t(_self, collection.value);
     }
 
+    // get blenduses of the user
+    blendconfiguses_t get_userblends(name user) {
+        return blendconfiguses_t(_self, user.value);
+    }
+
     // get nft refunds of collection (use user as scope)
     nftrefund_t get_nftrefunds(name user) {
         return nftrefund_t(_self, user.value);
@@ -275,156 +307,39 @@ CONTRACT shomaiiblend : public contract {
         return blenderid;
     }
 
-    // get the collection from the atomicassets contract
-    atomicassets::collections_t::const_iterator get_collection(name author, name collection) {
-        // validate target collection
-        auto itrCol = atomicassets::collections.require_find(collection.value, "This collection does not exist!");
-
-        // validate author
-        check(isAuthorized(collection, author), "You are not authorized in this collection!");
-
-        // validate contract is authorized by collection
-        check(isAuthorized(collection, author), "Contract is not authorized in the collection!");
-
-        return itrCol;
-    }
-
-    // get the target template iterator
-    atomicassets::templates_t::const_iterator get_target_template(name scope, uint64_t target_template) {
-        auto templates = atomicassets::get_templates(scope);
-        auto itrTemplate = templates.require_find(target_template, "Target template not found from collection!");
-
-        // check collection mint limit and supply
-        check(itrTemplate->max_supply > itrTemplate->issued_supply || itrTemplate->max_supply == 0, "Blender cannot mint more assets for the target template id!");
-
-        return itrTemplate;
-    }
+    atomicassets::collections_t::const_iterator get_collection(name author, name collection);
+    atomicassets::templates_t::const_iterator get_target_template(name scope, uint64_t target_template);
+    atomicassets::assets_t::const_iterator validateasset(uint64_t asset, name owner);
 
     // ======== util functions
     void validate_template_ingredient(atomicassets::templates_t & templates, uint64_t assetid);
     void validate_multitarget(name collection, vector<MultiTarget> targets);
     void validate_caller(name user, name collection);
 
-    /**
-     * Checks if the collection is whitelisted.
-    */
-    bool isWhitelisted(name collection) {
-        auto _sysconfig = sysconfig.get();
+    void check_config(uint64_t blenderid, name blender, name scope);
+    blendconfig_t::const_iterator set_config_check(name author, uint64_t blenderid, name scope);
 
-        return find(_sysconfig.whitelists.begin(), _sysconfig.whitelists.end(), collection) != _sysconfig.whitelists.end();
-    }
+    // ======== sys configs
+    bool isWhitelisted(name collection);
+    bool isBlacklisted(name collection);
 
-    /**
-     * Checks if the collection is blacklisted.
-    */
-    bool isBlacklisted(name collection) {
-        auto _sysconfig = sysconfig.get();
+    void checkfromrefund(uint64_t assetid, name owner);
+    void removeRefundNFTs(name from, name collection, vector<uint64_t> assetids);
 
-        return find(_sysconfig.blacklists.begin(), _sysconfig.blacklists.end(), collection) != _sysconfig.blacklists.end();
-    }
+    bool isAuthorized(name collection, name user);
 
-    /**
-	 * Checks if the asset is transferred to the smart contract and if it exists in the refund table.
-	 * 
-	 * Returns the asset iterator.
-	*/
-    atomicassets::assets_t::const_iterator validateasset(uint64_t asset, name owner) {
-        auto itrAssets = atomicassets::get_assets(get_self());
-        auto itr = itrAssets.require_find(asset, "The asset is not transferred to the smart contract for blending!");
-
-        checkfromrefund(asset, owner);
-
-        return itr;
-    }
-
-    /**
-	 * Checks and confirms if the asset is in the nftrefunds table within the scope of the owner.
-	*/
-    void checkfromrefund(uint64_t assetid, name owner) {
-        auto refunds = get_nftrefunds(owner);
-        refunds.require_find(assetid, "The asset does not exist or is not transferred by the user to the smart contract!");
-    }
-
-    /*
-    Remove NFTs from refund after a successfull action.
-  */
-    void removeRefundNFTs(name from, name collection, vector<uint64_t> assetids) {
-        auto refundtable = get_nftrefunds(from);
-
-        for (auto i : assetids) {
-            auto itr = refundtable.find(i);
-
-            // some checking in here for sure
-            check(itr->from == from, "The asset does not come from you!");
-            check(itr->collection == collection, "The asset was not sent to the collection's blend.");  // kind of useless check in here
-
-            // remove it
-            refundtable.erase(itr);
-        }
-    }
-
-    /*
-      Check if user is authorized to mint NFTs
-   */
-    bool isAuthorized(name collection, name user) {
-        auto itr = atomicassets::collections.require_find(collection.value, "No collection with this name exists!");
-        bool authorized = false;
-        vector<name> accs = itr->authorized_accounts;
-        for (auto it = accs.begin(); it != accs.end() && !authorized; it++) {
-            if (user == name(*it)) {
-                authorized = true;
-            }
-        }
-        return authorized;
-    }
-
-    /*
-      Call AtomicAssets contract to mint a new NFT
-   */
-    void mintasset(name collection, name schema, uint64_t templateid, name to) {
-        vector<asset> back_tokens;
-        atomicassets::ATTRIBUTE_MAP nodata = {};
-
-        int32_t _template = int32_t(templateid);
-
-        // call contract
-        action(
-            permission_level{get_self(), name("active")},
-            ATOMICASSETS,
-            name("mintasset"),
-            make_tuple(get_self(), collection, schema, _template, to, nodata, nodata, back_tokens))
-            .send();
-    }
-
-    /*
-      Call AtomicAssets contract to burn NFTs
-   */
-    void burnassets(vector<uint64_t> assets) {
-        for (auto it : assets) {
-            action(permission_level{get_self(), name("active")},
-                   ATOMICASSETS,
-                   name("burnasset"),
-                   make_tuple(get_self(), it))
-                .send();
-        }
-    }
-
-    /*
-    Call AtomicAssets contract to transfer assets
-*/
-    void transferassets(vector<uint64_t> assets, name to) {
-        action(
-            permission_level{get_self(), name("active")},
-            ATOMICASSETS,
-            name("transfer"),
-            make_tuple(get_self(), to, assets, string("transfer from contract")))
-            .send();
-    }
+    void mintasset(name collection, name schema, uint64_t templateid, name to);
+    void burnassets(vector<uint64_t> assets);
+    void transferassets(vector<uint64_t> assets, name to);
 
     /*
   Block the smart contract from calling own functions.
   */
     void blockContract(name caller) {
         check(caller != _self, "The smart contract should not call any of it's own functions!");
+    }
+
+    int32_t now() {
+        return current_time_point().sec_since_epoch();
     }
 };
