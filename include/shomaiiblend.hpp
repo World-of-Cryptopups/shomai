@@ -42,7 +42,7 @@ CONTRACT shomaiiblend : public contract {
 
     ACTION claimblslot(uint64_t claim_id, name blender, name scope);
 
-    ACTION setconfig(name author, uint64_t blenderid, name scope, bool enable);
+    ACTION removeconfig(name author, uint64_t blenderid, name scope);
     ACTION setwhitelist(name author, uint64_t blenderid, name scope, vector<name> names_list);
     ACTION setonwhlist(name author, uint64_t blenderid, name scope, bool on_whitelist);
     ACTION setdates(name author, uint64_t blenderid, name scope, int32_t startdate, int32_t enddate);
@@ -202,8 +202,8 @@ CONTRACT shomaiiblend : public contract {
         int32_t startdate = -1;  // -1, start as soon
         int32_t enddate = -1;    // -1, does not end
 
-        vector<name> whitelists;  // for whitelisting
-        bool enable_whitelists;   // on whitelists, even if this is changed, the `whitelists` field will not be changed nor modified
+        vector<name> whitelists = {};    // for whitelisting
+        bool enable_whitelists = false;  // on whitelists, even if this is changed, the `whitelists` field will not be changed nor modified
 
         uint64_t primary_key() const { return blenderid; };
     };
@@ -318,6 +318,7 @@ CONTRACT shomaiiblend : public contract {
 
     void check_config(uint64_t blenderid, name blender, name scope);
     void remove_blend_config(uint64_t blenderid, name author, name scope);
+    void increment_blend_use(uint64_t blenderid, name scope);
     blendconfig_t::const_iterator set_config_check(name author, uint64_t blenderid, name scope);
 
     // ======== sys configs

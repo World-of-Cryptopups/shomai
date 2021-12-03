@@ -50,35 +50,17 @@ void shomaiiblend::remove_blend_config(uint64_t blenderid, name author, name sco
  * This action is set to enable / disable a blend config.
  * If enabled, it will initialize a new config, otherwise, it will be erased.
 */
-ACTION shomaiiblend::setconfig(name author, uint64_t blenderid, name scope, bool enable) {
+ACTION shomaiiblend::removeconfig(name author, uint64_t blenderid, name scope) {
     require_auth(author);
     blockContract(author);
 
     auto _blendconfig = get_blendconfigs(scope);
-    auto itrConfig = _blendconfig.find(blenderid);
+    auto itrConfig = _blendconfig.require_find(blenderid, "Config of blend does not exist!");
 
     check(isAuthorized(scope, author), "User is not authorized in collection!");
 
-    // if enable == false, remove the config
-    if (!enable) {
-        check(itrConfig != _blendconfig.end(), "Config for blend is already not enabled.");
-
-        _blendconfig.erase(itrConfig);
-
-        return;
-    }
-
-    check(itrConfig == _blendconfig.end(), "Config for blend is already enabled.");
-
-    _blendconfig.emplace(author, [&](blendconfig_s &row) {
-        row.blenderid = blenderid;
-        row.maxuse = 0;
-        row.maxuseruse = 0;
-        row.startdate = -1;
-        row.enddate = -1;
-        row.enable_whitelists = false;
-        row.whitelists = {};
-    });
+    // remove blend config
+    _blendconfig.erase(itrConfig);
 }
 
 /**
@@ -89,9 +71,18 @@ ACTION shomaiiblend::setwhitelist(name author, uint64_t blenderid, name scope, v
     blockContract(author);
 
     auto _blendconfig = get_blendconfigs(scope);
-    auto itrConfig = _blendconfig.require_find(blenderid, "Config for blend does not exist!");
+    auto itrConfig = _blendconfig.find(blenderid);
 
     check(isAuthorized(scope, author), "User is not authorized in collection!");
+
+    check(names_list.size() > 0, "No one to whitelist.");
+
+    if (itrConfig == _blendconfig.end()) {
+        _blendconfig.emplace(author, [&](blendconfig_s &row) {
+            row.whitelists = names_list;
+        });
+        return;
+    }
 
     _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row) {
         row.whitelists = names_list;
@@ -106,9 +97,16 @@ ACTION shomaiiblend::setonwhlist(name author, uint64_t blenderid, name scope, bo
     blockContract(author);
 
     auto _blendconfig = get_blendconfigs(scope);
-    auto itrConfig = _blendconfig.require_find(blenderid, "Config for blend does not exist!");
+    auto itrConfig = _blendconfig.find(blenderid);
 
     check(isAuthorized(scope, author), "User is not authorized in collection!");
+
+    if (itrConfig == _blendconfig.end()) {
+        _blendconfig.emplace(author, [&](blendconfig_s &row) {
+            row.enable_whitelists = on_whitelist;
+        });
+        return;
+    }
 
     _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row) {
         row.enable_whitelists = on_whitelist;
@@ -124,7 +122,7 @@ ACTION shomaiiblend::setdates(name author, uint64_t blenderid, name scope, int32
     blockContract(author);
 
     auto _blendconfig = get_blendconfigs(scope);
-    auto itrConfig = _blendconfig.require_find(blenderid, "Config for blend does not exist!");
+    auto itrConfig = _blendconfig.find(blenderid);
 
     check(isAuthorized(scope, author), "User is not authorized in collection!");
 
@@ -134,13 +132,17 @@ ACTION shomaiiblend::setdates(name author, uint64_t blenderid, name scope, int32
         check(enddate > startdate, "End date should be greater than the startdate.");
     }
 
-    _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row) {
-        if (startdate != 0) {
+    if (itrConfig == _blendconfig.end()) {
+        _blendconfig.emplace(author, [&](blendconfig_s &row) {
             row.startdate = startdate;
-        }
-        if (enddate != 0) {
             row.enddate = enddate;
-        }
+        });
+        return;
+    }
+
+    _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row) {
+        row.startdate = startdate;
+        row.enddate = enddate;
     });
 }
 
@@ -153,9 +155,17 @@ ACTION shomaiiblend::setmax(name author, uint64_t blenderid, name scope, int32_t
     blockContract(author);
 
     auto _blendconfig = get_blendconfigs(scope);
-    auto itrConfig = _blendconfig.require_find(blenderid, "Config for blend does not exist!");
+    auto itrConfig = _blendconfig.find(blenderid);
 
     check(isAuthorized(scope, author), "User is not authorized in collection!");
+
+    if (itrConfig == _blendconfig.end()) {
+        _blendconfig.emplace(author, [&](blendconfig_s &row) {
+            row.maxuse = maxuse;
+            row.maxuseruse = maxuseruse;
+        });
+        return;
+    }
 
     _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row) {
         row.maxuse = maxuse;
