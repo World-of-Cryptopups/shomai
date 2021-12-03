@@ -19,6 +19,9 @@ ACTION shomaiiblend::remblsimple(name user, name scope, uint64_t blenderid) {
 
     // remove blend config if it exists
     remove_blend_config(blenderid, user, scope);
+
+    // remove blend stats if it exists
+    remove_blend_stats(blenderid, user, scope);
 }
 
 /**
@@ -40,6 +43,9 @@ ACTION shomaiiblend::remswsimple(name user, name scope, uint64_t blenderid) {
 
     // remove blend config if it exists
     remove_blend_config(blenderid, user, scope);
+
+    // remove blend stats if it exists
+    remove_blend_stats(blenderid, user, scope);
 }
 
 /**
@@ -61,4 +67,7 @@ ACTION shomaiiblend::remblslot(name user, name scope, uint64_t blenderid) {
 
     // remove blend config if it exists
     remove_blend_config(blenderid, user, scope);
+
+    // remove blend stats if it exists
+    remove_blend_stats(blenderid, user, scope);
 }

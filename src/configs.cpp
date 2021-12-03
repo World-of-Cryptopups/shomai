@@ -61,6 +61,21 @@ void shomaiiblend::remove_blend_config(uint64_t blenderid, name author, name sco
 }
 
 /**
+ * This is called when removing the stats of a blend.
+ * The main purpose is to free up some ram.
+*/
+void shomaiiblend::remove_blend_stats(uint64_t blenderid, name author, name scope) {
+    auto _blendstats = get_blendstats(scope);
+    auto itrBlendstats = _blendstats.find(blenderid);
+
+    // do not remove if no stats found
+    if (itrBlendstats == _blendstats.end()) return;
+
+    // erase the config
+    _blendstats.erase(itrBlendstats);
+}
+
+/**
  * This increments the blend total use and the blender's use.
 */
 void shomaiiblend::increment_blend_use(uint64_t blenderid, name blender, name scope) {
@@ -86,12 +101,12 @@ void shomaiiblend::increment_blend_use(uint64_t blenderid, name blender, name sc
     // update or create the user's blend use on the blend if the maxuserblend is not infinite
     if (itrConfig != _blendconfig.end()) {
         if (itrConfig->maxusercooldown != -1) {
-            // update only if cooldown is now infinite
+            // update only if cooldown is not infinite
 
             auto _blenduses = get_userblends(blender);
             auto itrBlendUses = _blenduses.find(blenderid);
 
-            if (itrBlendUses != _blenduses.end()) {
+            if (itrBlendUses == _blenduses.end()) {
                 _blenduses.emplace(blender, [&](blendconfiguses_s &row) {
                     row.blenderid = blenderid;
                     row.blender = blender;

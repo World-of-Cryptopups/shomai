@@ -334,6 +334,7 @@ CONTRACT shomaiiblend : public contract {
 
     void check_config(uint64_t blenderid, name blender, name scope);
     void remove_blend_config(uint64_t blenderid, name author, name scope);
+    void remove_blend_stats(uint64_t blenderid, name author, name scope);
     void increment_blend_use(uint64_t blenderid, name blender, name scope);
     blendconfig_t::const_iterator set_config_check(name author, uint64_t blenderid, name scope);
 
