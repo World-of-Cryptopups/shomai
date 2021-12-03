@@ -11,8 +11,12 @@ void shomaiiblend::check_config(uint64_t blenderid, name blender, name scope) {
     if (itrConfig == _blendconfig.end()) return;
 
     // check the dates
-    check(now() >= itrConfig->startdate, "Still waiting for start date.");
-    check(now() <= itrConfig->enddate, "Blending end date has already passed.");
+    if (itrConfig->startdate != -1) {
+        check(now() >= itrConfig->startdate, "Still waiting for start date.");
+    }
+    if (itrConfig->enddate != -1) {
+        check(now() <= itrConfig->enddate, "Blending end date has already passed.");
+    }
 
     // check the whitelist
     if (itrConfig->enable_whitelists) {
@@ -185,8 +189,14 @@ ACTION shomaiiblend::setdates(name author, uint64_t blenderid, name scope, int32
     check(isAuthorized(scope, author), "User is not authorized in collection!");
 
     if (enddate != 0 && enddate != -1 && startdate != 0 && startdate != -1) {
-        check(now() < startdate, "Start date should be greater than now.");
-        check(now() < enddate, "End date should be greater than now.");
+        if (itrConfig->startdate != startdate) {
+            check(now() < startdate, "Start date should be greater than now.");
+        }
+
+        if (itrConfig->enddate != enddate) {
+            check(now() < enddate, "End date should be greater than now.");
+        }
+
         check(enddate > startdate, "End date should be greater than the startdate.");
     }
 
