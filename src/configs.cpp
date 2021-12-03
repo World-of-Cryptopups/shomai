@@ -21,12 +21,22 @@ void shomaiiblend::check_config(uint64_t blenderid, name blender, name scope) {
 
     // check the max uses
     check(itrConfig->maxuse != 0, "The max use of the blend is currently zero.");
+    auto _blendstats = get_blendstats(scope);
+    auto itrBlendStats = _blendstats.find(blenderid);
+    if (itrBlendStats != _blendstats.end()) {
+        // check total uses
+        check(itrConfig->maxuse >= itrBlendStats->total_uses, "Maximum blend total use limit reached.");
+    }
 
     // check the max user use
     auto _blenduses = get_userblends(blender);
     auto itrBlendUses = _blenduses.find(blenderid);
     if (itrBlendUses != _blenduses.end()) {
-        check(itrBlendUses->total_uses <= itrConfig->maxuseruse, "Max user use has been reached!");
+        // check maximum user use
+        check(itrBlendUses->uses <= itrConfig->maxuseruse, "Max user use has been reached!");
+
+        // check cooldown
+        check(now() - itrBlendUses->last_used > itrConfig->maxusercooldown, "Blend use is still in cooldown.");
     }
 }
 
@@ -44,6 +54,54 @@ void shomaiiblend::remove_blend_config(uint64_t blenderid, name author, name sco
 
     // erase the config
     _blendconfig.erase(itrConfig);
+}
+
+/**
+ * This increments the blend total use and the blender's use.
+*/
+void shomaiiblend::increment_blend_use(uint64_t blenderid, name blender, name scope) {
+    auto _blendstats = get_blendstats(scope);
+    auto itrBlendstats = _blendstats.find(blenderid);
+
+    auto _blendconfig = get_blendconfigs(scope);
+    auto itrConfig = _blendconfig.find(blenderid);
+
+    if (itrBlendstats == _blendstats.end()) {
+        // addd new stats info if it doesn't exist
+        _blendstats.emplace(blender, [&](blendstats_s &row) {
+            row.blenderid = blenderid;
+            row.total_uses = 1;
+        });
+    } else {
+        // update stats
+        _blendstats.modify(itrBlendstats, blender, [&](blendstats_s &row) {
+            row.total_uses = itrBlendstats->total_uses + 1;
+        });
+    }
+
+    // update or create the user's blend use on the blend if the maxuserblend is not infinite
+    if (itrConfig != _blendconfig.end()) {
+        if (itrConfig->maxusercooldown != -1) {
+            // update only if cooldown is now infinite
+
+            auto _blenduses = get_userblends(blender);
+            auto itrBlendUses = _blenduses.find(blenderid);
+
+            if (itrBlendUses != _blenduses.end()) {
+                _blenduses.emplace(blender, [&](blendconfiguses_s &row) {
+                    row.blenderid = blenderid;
+                    row.blender = blender;
+                    row.last_used = now();
+                    row.uses = 1;
+                });
+            } else {
+                _blenduses.modify(itrBlendUses, blender, [&](blendconfiguses_s &row) {
+                    row.last_used = now();
+                    row.uses = itrBlendUses->uses + 1;
+                });
+            }
+        }
+    }
 }
 
 /**
@@ -74,8 +132,6 @@ ACTION shomaiiblend::setwhitelist(name author, uint64_t blenderid, name scope, v
     auto itrConfig = _blendconfig.find(blenderid);
 
     check(isAuthorized(scope, author), "User is not authorized in collection!");
-
-    check(names_list.size() > 0, "No one to whitelist.");
 
     if (itrConfig == _blendconfig.end()) {
         _blendconfig.emplace(author, [&](blendconfig_s &row) {
@@ -150,7 +206,7 @@ ACTION shomaiiblend::setdates(name author, uint64_t blenderid, name scope, int32
  * Set the maximum blend uses.
  * If `maxuse` is 0, the maxuseruse will not be updated.
 */
-ACTION shomaiiblend::setmax(name author, uint64_t blenderid, name scope, int32_t maxuse, int32_t maxuseruse) {
+ACTION shomaiiblend::setmax(name author, uint64_t blenderid, name scope, int32_t maxuse, int32_t maxuseruse, int32_t maxusercooldown) {
     require_auth(author);
     blockContract(author);
 
@@ -163,6 +219,7 @@ ACTION shomaiiblend::setmax(name author, uint64_t blenderid, name scope, int32_t
         _blendconfig.emplace(author, [&](blendconfig_s &row) {
             row.maxuse = maxuse;
             row.maxuseruse = maxuseruse;
+            row.maxusercooldown = maxusercooldown;
         });
         return;
     }
@@ -170,5 +227,6 @@ ACTION shomaiiblend::setmax(name author, uint64_t blenderid, name scope, int32_t
     _blendconfig.modify(itrConfig, author, [&](blendconfig_s &row) {
         row.maxuse = maxuse;
         row.maxuseruse = maxuseruse;
+        row.maxusercooldown = maxusercooldown;
     });
 };

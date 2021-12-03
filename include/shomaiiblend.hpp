@@ -46,7 +46,7 @@ CONTRACT shomaiiblend : public contract {
     ACTION setwhitelist(name author, uint64_t blenderid, name scope, vector<name> names_list);
     ACTION setonwhlist(name author, uint64_t blenderid, name scope, bool on_whitelist);
     ACTION setdates(name author, uint64_t blenderid, name scope, int32_t startdate, int32_t enddate);
-    ACTION setmax(name author, uint64_t blenderid, name scope, int32_t maxuse, int32_t maxuseruse);
+    ACTION setmax(name author, uint64_t blenderid, name scope, int32_t maxuse, int32_t maxuseruse, int32_t maxusercooldown);
     /* End Blend Actions */
 
     /* Start ORNG Actions */
@@ -195,9 +195,9 @@ CONTRACT shomaiiblend : public contract {
     TABLE blendconfig_s {
         uint64_t blenderid;
 
-        int32_t maxuse = -1;      // -1 = (global use) infinite use, 0 = disabled
-        int32_t maxuseruse = -1;  // -1 = (user use) infinite use
-        uint32_t total_uses = 0;  // this is the current blend total use
+        int32_t maxuse = -1;           // -1 = (global use) infinite use, 0 = disabled
+        int32_t maxuseruse = -1;       // -1 = (user use) infinite use
+        int32_t maxusercooldown = -1;  // -1 = no cooldown
 
         int32_t startdate = -1;  // -1, start as soon
         int32_t enddate = -1;    // -1, does not end
@@ -216,7 +216,17 @@ CONTRACT shomaiiblend : public contract {
 
         name blender;
         int32_t last_used;
-        int32_t total_uses;
+        int32_t uses;
+
+        uint64_t primary_key() const { return blenderid; };
+    };
+
+    /**
+     * Blend stats counter on usage.
+    */
+    TABLE blendstats_s {
+        uint64_t blenderid;
+        uint32_t total_uses;
 
         uint64_t primary_key() const { return blenderid; };
     };
@@ -238,6 +248,7 @@ CONTRACT shomaiiblend : public contract {
 
     typedef multi_index<"blendconfig"_n, blendconfig_s> blendconfig_t;
     typedef multi_index<"blendcfuses"_n, blendconfiguses_s> blendconfiguses_t;
+    typedef multi_index<"blendstats"_n, blendstats_s> blendstats_t;
     typedef multi_index<"nftrefunds"_n, nftrefund_s> nftrefund_t;
 
     typedef multi_index<"targetpools"_n, multitarget_s> multitargetpool_t;
@@ -282,6 +293,11 @@ CONTRACT shomaiiblend : public contract {
         return blendconfiguses_t(_self, user.value);
     }
 
+    // get blend stats
+    blendstats_t get_blendstats(name collection) {
+        return blendstats_t(_self, collection.value);
+    }
+
     // get nft refunds of collection (use user as scope)
     nftrefund_t get_nftrefunds(name user) {
         return nftrefund_t(_self, user.value);
@@ -318,7 +334,7 @@ CONTRACT shomaiiblend : public contract {
 
     void check_config(uint64_t blenderid, name blender, name scope);
     void remove_blend_config(uint64_t blenderid, name author, name scope);
-    void increment_blend_use(uint64_t blenderid, name scope);
+    void increment_blend_use(uint64_t blenderid, name blender, name scope);
     blendconfig_t::const_iterator set_config_check(name author, uint64_t blenderid, name scope);
 
     // ======== sys configs

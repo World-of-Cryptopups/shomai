@@ -43,6 +43,9 @@ ACTION shomaiiblend::callblsimple(uint64_t blenderid, name blender, name scope, 
 
     // remove assets from nftrefunds
     removeRefundNFTs(blender, scope, assetids);
+
+    // increment blend use
+    increment_blend_use(blenderid, blender, scope);
 }
 
 /**
@@ -85,6 +88,9 @@ ACTION shomaiiblend::callswsimple(uint64_t blenderid, name blender, name scope, 
 
     // remove nfts from refund
     removeRefundNFTs(blender, scope, assetids);
+
+    // increment blend use
+    increment_blend_use(blenderid, blender, scope);
 }
 
 /**
@@ -255,4 +261,7 @@ ACTION shomaiiblend::callblslot(uint64_t blenderid, name blender, name scope, ve
             signing_value,
             get_self()))
         .send();
+
+    // increment blend use
+    increment_blend_use(blenderid, blender, scope);
 }
