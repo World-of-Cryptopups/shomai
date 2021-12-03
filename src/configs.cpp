@@ -135,6 +135,7 @@ ACTION shomaiiblend::setwhitelist(name author, uint64_t blenderid, name scope, v
 
     if (itrConfig == _blendconfig.end()) {
         _blendconfig.emplace(author, [&](blendconfig_s &row) {
+            row.blenderid = blenderid;
             row.whitelists = names_list;
         });
         return;
@@ -159,6 +160,7 @@ ACTION shomaiiblend::setonwhlist(name author, uint64_t blenderid, name scope, bo
 
     if (itrConfig == _blendconfig.end()) {
         _blendconfig.emplace(author, [&](blendconfig_s &row) {
+            row.blenderid = blenderid;
             row.enable_whitelists = on_whitelist;
         });
         return;
@@ -190,6 +192,7 @@ ACTION shomaiiblend::setdates(name author, uint64_t blenderid, name scope, int32
 
     if (itrConfig == _blendconfig.end()) {
         _blendconfig.emplace(author, [&](blendconfig_s &row) {
+            row.blenderid = blenderid;
             row.startdate = startdate;
             row.enddate = enddate;
         });
@@ -217,6 +220,7 @@ ACTION shomaiiblend::setmax(name author, uint64_t blenderid, name scope, int32_t
 
     if (itrConfig == _blendconfig.end()) {
         _blendconfig.emplace(author, [&](blendconfig_s &row) {
+            row.blenderid = blenderid;
             row.maxuse = maxuse;
             row.maxuseruse = maxuseruse;
             row.maxusercooldown = maxusercooldown;
