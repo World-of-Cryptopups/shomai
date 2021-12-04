@@ -36,11 +36,15 @@ void shomaiiblend::check_config(uint64_t blenderid, name blender, name scope) {
     auto _blenduses = get_userblends(blender);
     auto itrBlendUses = _blenduses.find(blenderid);
     if (itrBlendUses != _blenduses.end()) {
-        // check maximum user use
-        check(itrBlendUses->uses <= itrConfig->maxuseruse, "Max user use has been reached!");
+        if (itrConfig->maxuseruse != -1) {
+            // check maximum user use
+            check(itrBlendUses->uses <= itrConfig->maxuseruse, "Max user use has been reached!");
+        }
 
-        // check cooldown
-        check(now() - itrBlendUses->last_used > itrConfig->maxusercooldown, "Blend use is still in cooldown.");
+        if (itrConfig->maxusercooldown != -1) {
+            // check cooldown
+            check(now() - itrBlendUses->last_used > itrConfig->maxusercooldown, "Blend use is still in cooldown.");
+        }
     }
 }
 
