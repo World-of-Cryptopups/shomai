@@ -125,6 +125,9 @@ void shomaiiblend::mintasset(name collection, name schema, uint64_t templateid, 
         name("mintasset"),
         make_tuple(get_self(), collection, schema, _template, to, nodata, nodata, back_tokens))
         .send();
+
+    // decrease the ram
+    decrease_ram_balance(collection, 151);
 }
 
 /*

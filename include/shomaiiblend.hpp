@@ -13,6 +13,7 @@
 #include <eosio/eosio.hpp>
 #include <eosio/singleton.hpp>
 #include <eosio/transaction.hpp>
+#include <ram-interface.hpp>
 #include <wax-orng.hpp>
 
 using namespace std;
@@ -61,15 +62,28 @@ CONTRACT shomaiiblend : public contract {
     ACTION clearrefunds(name scope);
     /*  End System actions */
 
+    /*  Start Ram actions */
+    ACTION withdrawram(name author, name collection, name recipient, int64_t bytes);
+    /*  End Ram actions */
+
     /* Start Util actions */
     ACTION refundnfts(name user, name scope, vector<uint64_t> assetids);
+    ACTION buyramproxy(name collection, asset quantity);
     /* End Util actions */
 
     /* Start Payable Actions */
+    [[eosio::on_notify("eosio.token::transfer")]] void depositram(name from, name to, asset quantity, string memo);
     [[eosio::on_notify("atomicassets::transfer")]] void savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo);
     /* End Payable Actions */
 
    private:
+    TABLE rambalance_s {
+        name collection;
+        uint64_t bytes;
+
+        uint64_t primary_key() const { return collection.value; };
+    };
+
     /*
    System configuration singleton table.
    */
@@ -236,6 +250,8 @@ CONTRACT shomaiiblend : public contract {
         uint64_t claimcounter = 100000;
     };
 
+    typedef multi_index<"rambalances"_n, rambalance_s> rambalance_t;
+
     typedef singleton<"configs"_n, config_s> config_t;
     typedef multi_index<"configs"_n, config_s> config_t_for_abi;
     typedef singleton<"sysconfigs"_n, sysconfig_s> sysconfig_t;
@@ -261,6 +277,7 @@ CONTRACT shomaiiblend : public contract {
     config_t config = config_t(_self, _self.value);
     sysconfig_t sysconfig = sysconfig_t(_self, _self.value);
     claimjob_t claimjobs = claimjob_t(_self, _self.value);
+    rambalance_t rambalances = rambalance_t(_self, _self.value);
 
     /* Internal get tables by scope. */
 
@@ -337,6 +354,11 @@ CONTRACT shomaiiblend : public contract {
     void remove_blend_stats(uint64_t blenderid, name author, name scope);
     void increment_blend_use(uint64_t blenderid, name blender, name scope);
     blendconfig_t::const_iterator set_config_check(name author, uint64_t blenderid, name scope);
+
+    // ram actions
+    void decrease_ram_balance(name collection, int64_t bytes);
+    void increase_ram_balance(name collectiom, int64_t bytes);
+    void check_ram_balance(name collection);
 
     // ======== sys configs
     bool isWhitelisted(name collection);
