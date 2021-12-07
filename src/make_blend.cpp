@@ -1,7 +1,7 @@
 #include <shomaiiblend.hpp>
 
 /**
- * Create a Simple Blend (same collection only)
+ * Create a Simple Blend
 */
 ACTION shomaiiblend::makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients) {
     validate_caller(author, collection);
@@ -29,7 +29,7 @@ ACTION shomaiiblend::makeblsimple(name author, name collection, uint32_t target,
 }
 
 /**
- * Create a Simple Swap. (same collection only)
+ * Create a Simple Swap. (swaps are only same-collection)
 */
 ACTION shomaiiblend::makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient) {
     validate_caller(author, collection);
@@ -64,12 +64,9 @@ ACTION shomaiiblend::makeswsimple(name author, name collection, uint32_t target,
     });
 }
 
-ACTION shomaiiblend::makeblmulti(name author, name collection, uint32_t target, vector<MultiBlendIngredient> ingredients, string title) {
-    validate_caller(author, collection);
-
-    auto itrCol = get_collection(author, collection);
-}
-
+/**
+ * Create a Slot Blend
+*/
 ACTION shomaiiblend::makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title) {
     validate_caller(author, collection);
 

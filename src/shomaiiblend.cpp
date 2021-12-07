@@ -67,21 +67,6 @@ ACTION shomaiiblend::sysaddblack(name collection) {
 }
 
 /**
- * Remove NFTs from refunds. (for emergency / needed purposes)
-*/
-ACTION shomaiiblend::clearrefunds(name scope) {
-    require_auth(get_self());
-
-    // remove all recorsd
-    auto reftable = get_nftrefunds(scope);
-    auto itr = reftable.begin();
-
-    while (itr != reftable.end()) {
-        reftable.erase(itr);
-    }
-}
-
-/**
  * Log NFT transfers for refund.
 */
 [[eosio::on_notify("atomicassets::transfer")]] void shomaiiblend::savetransfer(name from, name to, vector<uint64_t> asset_ids, string memo) {

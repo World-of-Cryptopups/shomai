@@ -29,7 +29,6 @@ CONTRACT shomaiiblend : public contract {
     /* Start Blend Actions */
     ACTION makeblsimple(name author, name collection, uint32_t target, vector<uint32_t> ingredients);
     ACTION makeswsimple(name author, name collection, uint32_t target, uint32_t ingredient);
-    ACTION makeblmulti(name author, name collection, uint32_t target, vector<MultiBlendIngredient> ingredients, string title);
     ACTION makeblslot(name author, name collection, vector<MultiTarget> targets, vector<SlotBlendIngredient> ingredients, string title);
 
     ACTION remblsimple(name user, name scope, uint64_t blenderid);
@@ -58,7 +57,6 @@ CONTRACT shomaiiblend : public contract {
     ACTION initsys();
     ACTION sysaddwhite(name collection);
     ACTION sysaddblack(name collection);
-    ACTION clearrefunds(name scope);
     /*  End System actions */
 
     /*  Start Ram actions */
@@ -76,6 +74,9 @@ CONTRACT shomaiiblend : public contract {
     /* End Payable Actions */
 
    private:
+    /**
+     * Ram balance table management.
+    */
     TABLE rambalance_s {
         name collection;
         uint64_t bytes;
@@ -83,18 +84,18 @@ CONTRACT shomaiiblend : public contract {
         uint64_t primary_key() const { return collection.value; };
     };
 
-    /*
-   System configuration singleton table.
-   */
+    /**
+     * System configuration singleton table.
+    */
     TABLE sysconfig_s {
         vector<name> whitelists;
         vector<name> blacklists;
     };
 
-    /*
-    Refund NFT Table.
-     - This is where NFT transactions are logged for refund if there are failed transactions.
-  */
+    /**
+     * Refund NFT Table.
+     * - This is where NFT transactions are logged for refund if there are failed transactions.
+    */
     TABLE nftrefund_s {
         uint64_t assetid;
         name from;
@@ -103,9 +104,9 @@ CONTRACT shomaiiblend : public contract {
         uint64_t primary_key() const { return assetid; };
     };
 
-    /*
-  Simple Blend (only from one collection)
-*/
+    /**
+     * Simple Blend (only from one collection)
+    */
     TABLE simpleblend_s {
         uint64_t blenderid;
         name author;  // author
@@ -118,25 +119,22 @@ CONTRACT shomaiiblend : public contract {
         // uint64_t by_collection() const { return collection.value; };
     };
 
-    /*
-  Multi Blend (cross-collection, )
-  */
-    TABLE multiblend_s {
-        uint64_t blenderid;
-        name author;
+    /**
+     * Multi Blend (same with simple, but is multi-target)
+    */
+    // TABLE multiblend_s {
+    //     uint64_t blenderid;
+    //     name author;
 
-        name collection;
-        uint32_t target;
-        vector<MultiBlendIngredient> ingredients;
+    //     name collection;
+    //     vector<uint32_t> ingredients;
 
-        string title;
+    //     uint64_t primary_key() const { return blenderid; };
+    // };
 
-        uint64_t primary_key() const { return blenderid; };
-    };
-
-    /*
-  Slot Blend (config-based)
- */
+    /**
+     * Slot Blend (config-based)
+    */
     TABLE slotblend_s {
         uint64_t blenderid;
         name author;
@@ -149,9 +147,9 @@ CONTRACT shomaiiblend : public contract {
         uint64_t primary_key() const { return blenderid; };
     };
 
-    /*
-  Simple Swap (swap assets, single collection)
-*/
+    /**
+     * Simple Swap (swap assets, single collection)
+    */
     TABLE simpleswap_s {
         uint64_t blenderid;
         name author;
@@ -164,9 +162,9 @@ CONTRACT shomaiiblend : public contract {
         // uint64_t by_collection() const { return collection.value; };
     };
 
-    /*
-	Multi Target pool.
-*/
+    /**
+     * Multi Target pool.
+    */
     TABLE multitarget_s {
         uint64_t blenderid;
 
@@ -176,8 +174,8 @@ CONTRACT shomaiiblend : public contract {
         uint64_t primary_key() const { return blenderid; };
     };
 
-    /*
-	Unclaimed NFTs from blends.
+    /**
+     * Unclaimed NFTs from blends.
 	*/
     TABLE claimassets_s {
         uint64_t claim_id;
@@ -191,6 +189,9 @@ CONTRACT shomaiiblend : public contract {
         uint64_t primary_key() const { return claim_id; };
     };
 
+    /**
+     * This is basis for the ORNG.
+    */
     TABLE claimjob_s {
         uint64_t claim_id;
 
@@ -202,9 +203,9 @@ CONTRACT shomaiiblend : public contract {
         uint64_t primary_key() const { return claim_id; };
     };
 
-    /*
-    BlendConfigs
-  */
+    /**
+     * BlendConfigs (all blends have similar config) this is scalabale in its own way.
+    */
     TABLE blendconfig_s {
         uint64_t blenderid;
 
@@ -257,7 +258,7 @@ CONTRACT shomaiiblend : public contract {
     typedef multi_index<"sysconfigs"_n, sysconfig_s> sysconfig_t_for_abi;
 
     typedef multi_index<"simblenders"_n, simpleblend_s> simblender_t;
-    typedef multi_index<"multblenders"_n, multiblend_s> multiblend_t;
+    // typedef multi_index<"multblenders"_n, multiblend_s> multiblend_t;
     typedef multi_index<"slotblenders"_n, slotblend_s> slotblend_t;
     typedef multi_index<"simswaps"_n, simpleswap_s> simswap_t;
 
@@ -290,9 +291,9 @@ CONTRACT shomaiiblend : public contract {
         return simswap_t(_self, collection.value);
     }
 
-    multiblend_t get_multiblends(name collection) {
-        return multiblend_t(_self, collection.value);
-    }
+    // multiblend_t get_multiblends(name collection) {
+    //     return multiblend_t(_self, collection.value);
+    // }
 
     // get slot blends of collection
     slotblend_t get_slotblends(name collection) {
