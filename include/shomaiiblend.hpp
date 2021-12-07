@@ -7,7 +7,6 @@
 #pragma once
 
 #include <atomicassets.hpp>
-#include <atomicdata.hpp>
 #include <custom-types.hpp>
 #include <eosio/crypto.hpp>
 #include <eosio/eosio.hpp>
